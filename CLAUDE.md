@@ -9,7 +9,8 @@ An educational, single-node DBMS built from scratch in Python to learn database 
 
 ### Constraints
 
-- **Tech stack**: Python ^3.12, Poetry for packaging/deps. Storage + catalog **core is stdlib-only** (no 3rd-party libs). The single allowed runtime dependency is **Rich**, confined to the CLI presentation layer behind a swappable renderer interface. Dev deps: pytest, ruff.
+- **Tech stack**: Python ^3.12, Poetry for packaging/deps.
+- **Dependency rule (governing)**: helper libraries allowed; libraries that double as core DB functionality are banned. Hand-write storage/encoding/durability/indexing with stdlib (`struct`, `os`, `json`). Allowed helper runtime deps: **Rich** (CLI presentation, behind a swappable renderer) and **loguru** (logging). Dev deps: pytest, ruff.
 - **Simplicity (hard)**: "As simple as possible." Prefer the simplest correct design; KISS/DRY/YAGNI. Many small, cohesive modules over large ones. No speculative abstraction.
 - **Modularity (hard)**: Catalog, low-level storage manager, and CLI/visualization are cleanly separated. Rendering library must be swappable without touching storage code.
 - **Durability**: Write-through + fsync on every mutating operation; data must survive process restart.
@@ -141,7 +142,20 @@ Use these entry points:
 Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
 <!-- GSD:workflow-end -->
 
+<!-- PROJECT:validation-start (hand-maintained — survives GSD regen) -->
+## Per-Phase Validation Gate (MANDATORY)
 
+Every phase must pass the validation pipeline in `.planning/VALIDATION.md` **after `/gsd-execute-phase` and before the phase closes / before `/gsd-verify-work`**.
+
+Pipeline (sequential, fresh independent agents, loop until clean):
+1. **Stage 1 — code review (parallel):** 1.1 Bug Hunter + 1.2 Regression Hunter.
+2. **Stage 2 — research revalidation (parallel):** two independent validators re-check the research claims that guided the phase; re-run the researcher (fresh) to re-derive any disputed claim. Auto-skip (`n/a`) if the phase had no material research claims.
+3. **Stage 3 — fixes:** a separate fresh Fixer applies minimal, human-looking fixes for CRITICAL/HIGH findings, then re-run the relevant stages with fresh finders.
+
+**Exit:** zero CRITICAL/HIGH from bug + regression + research validators; MEDIUM/LOW logged in `{phase_dir}/{padded_phase}-REVIEW.md`. Validators and researchers may be re-run as many times as needed. Keep all code simple and human-looking; uphold KISS/DRY/YAGNI and the dependency rule (helper libs only — no library that does core DB work).
+
+Spawn each agent with the exact fresh-look prompt in `.planning/VALIDATION.md` (no executor context leaks in).
+<!-- PROJECT:validation-end -->
 
 <!-- GSD:profile-start -->
 ## Developer Profile
