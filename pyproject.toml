@@ -1,0 +1,36 @@
+[project]
+name = "super-db"
+version = "0.1.0"
+description = "Educational single-node DBMS storage layer: slotted-page row-store + B+Tree."
+requires-python = ">=3.12,<4.0"
+authors = [{ name = "Misha", email = "mykhailov.my@protonmail.com" }]
+dependencies = [
+    "rich>=15,<16",
+    "loguru>=0.7,<0.8",
+]
+
+[project.scripts]
+db-cli = "super_db.cli.main:main"
+
+[tool.poetry]
+package-mode = true
+packages = [{ include = "super_db", from = "src" }]
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8,<9"
+ruff = ">=0.6,<1.0"
+
+[build-system]
+requires = ["poetry-core>=2.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
