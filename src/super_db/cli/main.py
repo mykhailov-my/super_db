@@ -1,0 +1,49 @@
+import argparse
+import sys
+
+from loguru import logger
+
+from super_db import __version__
+from super_db.cli.commands.init import add_init_parser, run_init
+from super_db.common.errors import SuperDBError
+from super_db.render.rich_renderer import RichRenderer
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="db-cli", description="super_db database CLI")
+    parser.add_argument("--version", action="version", version=f"db-cli {__version__}")
+    parser.add_argument("--db", metavar="PATH", help="database directory")
+    parser.add_argument("--debug", action="store_true", help="enable debug logging")
+    parser.add_argument("--verbose", action="store_true", help="enable info logging")
+
+    nouns = parser.add_subparsers(dest="noun", title="commands", metavar="<command>")
+    db_parser = nouns.add_parser("db", help="database-level commands")
+    db_verbs = db_parser.add_subparsers(dest="verb", title="db commands", metavar="<verb>")
+    add_init_parser(db_verbs)
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
+    args = parser.parse_args()
+
+    from super_db.common.log import setup_logging
+    setup_logging(debug=args.debug, verbose=args.verbose)
+
+    if args.noun is None:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
+
+    renderer = RichRenderer()
+    logger.debug("cli: command noun={noun} verb={verb}", noun=args.noun, verb=getattr(args, "verb", None))
+
+    try:
+        if args.noun == "db" and args.verb == "init":
+            run_init(args, renderer)
+        else:
+            parser.print_help(sys.stderr)
+            sys.exit(1)
+    except SuperDBError as exc:
+        logger.debug("cli: failed reason={exc!r}", exc=exc)
+        renderer.render_error(str(exc))
+        sys.exit(1)
