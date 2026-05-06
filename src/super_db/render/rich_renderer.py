@@ -4,7 +4,7 @@ from rich.console import Console
 class RichRenderer:
     def __init__(self) -> None:
         self._console = Console()
-        self._err_console = Console(stderr=True)
+        self._err_console = Console(stderr=True, width=200)
 
     def render_message(self, msg: str) -> None:
         self._console.print(msg)
