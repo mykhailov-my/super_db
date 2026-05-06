@@ -6,6 +6,7 @@ from loguru import logger
 from super_db import __version__
 from super_db.cli.commands.init import add_init_parser, run_init
 from super_db.common.errors import SuperDBError
+from super_db.common.log import setup_logging
 from super_db.render.rich_renderer import RichRenderer
 
 
@@ -27,7 +28,6 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
-    from super_db.common.log import setup_logging
     setup_logging(debug=args.debug, verbose=args.verbose)
 
     if args.noun is None:
