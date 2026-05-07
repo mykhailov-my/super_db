@@ -38,7 +38,10 @@ def init_db(db_dir: Path, force: bool = False) -> None:
         if meta is None and any(db_dir.iterdir()):
             raise InitError(f"{db_dir}: directory is not empty and not a super_db database")
     else:
-        db_dir.mkdir(parents=True)
+        try:
+            db_dir.mkdir(parents=True)
+        except OSError as e:
+            raise InitError(f"{db_dir}: cannot create database directory ({e.strerror})") from e
     _write_meta(db_dir)
 
 

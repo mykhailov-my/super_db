@@ -79,3 +79,11 @@ def test_open_malformed_meta(tmp_path: Path) -> None:
     (d / "meta.json").write_text("{not json")
     with pytest.raises(OpenError):
         open_db(d)
+
+
+def test_init_unwritable_path_raises_init_error(tmp_path: Path) -> None:
+    # Use an existing file as the parent so mkdir fails deterministically.
+    blocker = tmp_path / "blocker"
+    blocker.write_text("I am a file, not a dir")
+    with pytest.raises(InitError, match="cannot create database directory"):
+        init_db(blocker / "sub")
