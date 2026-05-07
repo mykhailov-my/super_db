@@ -87,3 +87,22 @@ def test_init_unwritable_path_raises_init_error(tmp_path: Path) -> None:
     blocker.write_text("I am a file, not a dir")
     with pytest.raises(InitError, match="cannot create database directory"):
         init_db(blocker / "sub")
+
+
+def test_open_hostile_binary_meta(tmp_path: Path) -> None:
+    # A non-UTF-8 meta.json must surface a clean OpenError, not UnicodeDecodeError.
+    d = tmp_path / "hostile"
+    d.mkdir()
+    (d / "meta.json").write_bytes(b"\xff\xfe corrupt")
+    with pytest.raises(OpenError):
+        open_db(d)
+
+
+def test_init_non_empty_wrong_magic_dir(tmp_path: Path) -> None:
+    # Valid JSON but wrong magic in a non-empty dir is not a super_db db: refuse.
+    d = tmp_path / "other"
+    d.mkdir()
+    (d / "meta.json").write_text(json.dumps({"magic": "OTHER"}))
+    (d / "data.bin").write_bytes(b"important")
+    with pytest.raises(InitError, match="not empty and not a super_db database"):
+        init_db(d)

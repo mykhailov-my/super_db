@@ -45,21 +45,25 @@ def test_open_error_is_catchable_as_superdb_error():
 
 
 # ---------------------------------------------------------------------------
-# durability stub
+# durability helpers (Phase 1: plain write; Phase 2 hardens to fsync+replace)
 # ---------------------------------------------------------------------------
 
-def test_write_file_atomic_raises_not_implemented():
+def test_write_file_atomic_writes_bytes(tmp_path):
     from super_db.common.durability import write_file_atomic
 
-    with pytest.raises(NotImplementedError):
-        write_file_atomic(pathlib.Path("x"), b"")
+    target = tmp_path / "blob"
+    write_file_atomic(target, b"hello")
+    assert target.read_bytes() == b"hello"
 
 
-def test_write_json_atomic_raises_not_implemented():
+def test_write_json_atomic_writes_indented_json(tmp_path):
+    import json
+
     from super_db.common.durability import write_json_atomic
 
-    with pytest.raises(NotImplementedError):
-        write_json_atomic(pathlib.Path("x"), {})
+    target = tmp_path / "obj.json"
+    write_json_atomic(target, {"a": 1})
+    assert json.loads(target.read_text()) == {"a": 1}
 
 
 # ---------------------------------------------------------------------------

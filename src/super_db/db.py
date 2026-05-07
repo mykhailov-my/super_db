@@ -5,6 +5,7 @@ from pathlib import Path
 from loguru import logger
 
 from super_db.common.constants import DEFAULT_PAGE_SIZE, FORMAT_VERSION, MAGIC, META_FILE
+from super_db.common.durability import write_json_atomic
 from super_db.common.errors import InitError, OpenError
 
 
@@ -14,7 +15,7 @@ def _try_load_meta(db_dir: Path) -> dict | None:
         return None
     try:
         return json.loads(p.read_text())
-    except (json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError):
         return None
 
 
@@ -25,7 +26,7 @@ def _write_meta(db_dir: Path) -> None:
         "created_at": datetime.now(timezone.utc).isoformat(),
         "default_page_size": DEFAULT_PAGE_SIZE,
     }
-    (db_dir / META_FILE).write_text(json.dumps(meta, indent=2))
+    write_json_atomic(db_dir / META_FILE, meta)
     logger.debug("init: created meta.json path={path}", path=db_dir / META_FILE)
 
 
@@ -33,9 +34,10 @@ def init_db(db_dir: Path, force: bool = False) -> None:
     db_dir = Path(db_dir).resolve()
     if db_dir.exists():
         meta = _try_load_meta(db_dir)
-        if meta is not None and meta.get("magic") == MAGIC and not force:
+        is_db = meta is not None and meta.get("magic") == MAGIC
+        if is_db and not force:
             raise InitError(f"{db_dir}: already a super_db database (use --force to re-initialize)")
-        if meta is None and any(db_dir.iterdir()):
+        if not is_db and any(db_dir.iterdir()):
             raise InitError(f"{db_dir}: directory is not empty and not a super_db database")
     else:
         try:

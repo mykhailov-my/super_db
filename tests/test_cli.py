@@ -77,3 +77,11 @@ def test_default_quiet(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert "[DEBUG]" not in result.stderr
     assert "[INFO]" not in result.stderr
+
+
+def test_global_db_flag_before_subcommand(tmp_path: Path) -> None:
+    # --db is a global flag (D-02): it must work placed before the noun/verb.
+    db_dir = tmp_path / "mydb"
+    result = _run("--db", str(db_dir), "db", "init")
+    assert result.returncode == 0
+    assert (db_dir / "meta.json").exists()
