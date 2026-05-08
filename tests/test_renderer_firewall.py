@@ -5,9 +5,11 @@ from super_db.render.protocol import Renderer
 
 
 def test_rich_not_imported_outside_render():
-    src = Path("src/super_db")
+    src = Path(__file__).parent.parent / "src" / "super_db"
+    files = list(src.rglob("*.py"))
+    assert files, f"firewall scan found no files under {src}"
     leaks = []
-    for f in src.rglob("*.py"):
+    for f in files:
         if "render" in f.parts:
             continue
         for line in f.read_text().splitlines():

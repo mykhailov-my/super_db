@@ -87,47 +87,38 @@ def test_setup_logging_debug_flag(monkeypatch):
         logger.remove()  # clean up for next test
 
 
-def test_setup_logging_verbose_flag(monkeypatch):
-    """--verbose sets level INFO; DEBUG is suppressed."""
+def test_setup_logging_verbose_flag(monkeypatch, capsys):
+    """--verbose sets level INFO; DEBUG is suppressed on the stderr sink."""
     monkeypatch.delenv("LOG_LEVEL", raising=False)
     from loguru import logger
     from super_db.common.log import setup_logging
 
-    debug_records = []
-    info_records = []
     setup_logging(debug=False, verbose=True)
-    h_debug = logger.add(debug_records.append, level="DEBUG")
-    h_info = logger.add(info_records.append, level="INFO")
     try:
         logger.debug("should-not-appear")
         logger.info("should-appear")
-        # INFO message must pass through
-        assert any("should-appear" in str(r) for r in info_records)
     finally:
-        logger.remove(h_debug)
-        logger.remove(h_info)
         logger.remove()
+    err = capsys.readouterr().err
+    assert "should-appear" in err
+    assert "should-not-appear" not in err
 
 
-def test_setup_logging_log_level_env(monkeypatch):
-    """LOG_LEVEL env var used when no flags given."""
+def test_setup_logging_log_level_env(monkeypatch, capsys):
+    """LOG_LEVEL env var sets the level when no flags given."""
     monkeypatch.setenv("LOG_LEVEL", "ERROR")
     from loguru import logger
     from super_db.common.log import setup_logging
 
-    records = []
     setup_logging(debug=False, verbose=False)
-    handler_id = logger.add(records.append, level="DEBUG")
     try:
         logger.warning("warn-msg")
         logger.error("err-msg")
-        # WARNING must be suppressed; ERROR must pass through stderr sink
-        # We can only observe what gets through to our secondary sink (level=DEBUG)
-        # but the main stderr sink is set to ERROR — the important thing is no exception
-        assert True  # function completed without error
     finally:
-        logger.remove(handler_id)
         logger.remove()
+    err = capsys.readouterr().err
+    assert "err-msg" in err
+    assert "warn-msg" not in err
 
 
 def test_setup_logging_default_is_warning(monkeypatch):
