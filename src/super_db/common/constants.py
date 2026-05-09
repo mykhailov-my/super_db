@@ -2,3 +2,4 @@ MAGIC = "SUPERDB"
 FORMAT_VERSION = 1
 DEFAULT_PAGE_SIZE = 4096
 META_FILE = "meta.json"
+CATALOG_FILE = "catalog.json"
