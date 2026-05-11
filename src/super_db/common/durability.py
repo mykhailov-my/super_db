@@ -15,11 +15,18 @@ def write_file_atomic(path: Path, data: bytes) -> None:
     parent = path.parent
     fd, tmp = tempfile.mkstemp(dir=parent, suffix=".tmp")
     try:
-        os.write(fd, data)
-        os.fsync(fd)
-    finally:
-        os.close(fd)
-    os.replace(tmp, path)
+        try:
+            os.write(fd, data)
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
     dfd = os.open(str(parent), os.O_RDONLY)
     try:
         os.fsync(dfd)

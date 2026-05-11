@@ -227,3 +227,36 @@ def test_rid_definition() -> None:
     r = RID(1, 2)
     assert r.page_id == 1
     assert r.slot_id == 2
+
+
+def test_corrupt_catalog_missing_keys_raises_value_error(tmp_path: Path) -> None:
+    # A structurally-broken catalog.json must surface a clean ValueError,
+    # not a KeyError traceback.
+    (tmp_path / "catalog.json").write_text(json.dumps({"version": 1}))
+    with pytest.raises(ValueError, match="corrupt catalog"):
+        list_tables(tmp_path)
+
+
+def test_corrupt_catalog_non_utf8_raises_value_error(tmp_path: Path) -> None:
+    (tmp_path / "catalog.json").write_bytes(b"\xff\xfe not json")
+    with pytest.raises(ValueError, match="corrupt catalog"):
+        list_tables(tmp_path)
+
+
+def test_corrupt_catalog_bad_table_name_rejected(tmp_path: Path) -> None:
+    # A hostile name in a hand-edited catalog must not reach the filesystem.
+    cat = {
+        "version": 1,
+        "next_table_id": 2,
+        "tables": [{
+            "table_id": 1,
+            "name": "../evil",
+            "columns": [{"name": "id", "type": "INT", "nullable": True}],
+            "storage_track": "row",
+            "page_size": 4096,
+            "format_version": 1,
+        }],
+    }
+    (tmp_path / "catalog.json").write_text(json.dumps(cat))
+    with pytest.raises(ValueError, match="invalid table name"):
+        describe_table(tmp_path, "../evil")

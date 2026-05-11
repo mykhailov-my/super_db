@@ -27,9 +27,12 @@ def _load_catalog(db_dir: Path) -> dict:
     if not p.exists():
         return {"version": 1, "next_table_id": 1, "tables": []}
     try:
-        return json.loads(p.read_text("utf-8"))
-    except (json.JSONDecodeError, OSError) as e:
+        cat = json.loads(p.read_text("utf-8"))
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as e:
         raise ValueError(f"{p}: corrupt catalog ({e})") from e
+    if not isinstance(cat, dict) or "tables" not in cat or "next_table_id" not in cat:
+        raise ValueError(f"{p}: corrupt catalog (missing required keys)")
+    return cat
 
 
 def _save_catalog(db_dir: Path, cat: dict) -> None:
@@ -69,18 +72,24 @@ def _table_to_dict(meta: TableMeta) -> dict:
 
 
 def _table_from_dict(d: dict) -> TableMeta:
-    cols = tuple(
-        Column(c["name"], ColumnType(c["type"]), c["nullable"])
-        for c in d["columns"]
-    )
-    return TableMeta(
-        table_id=d["table_id"],
-        name=d["name"],
-        columns=cols,
-        storage_track=StorageTrack(d["storage_track"]),
-        page_size=d["page_size"],
-        format_version=d["format_version"],
-    )
+    try:
+        name = d["name"]
+        if not _IDENT.match(name):
+            raise ValueError(f"corrupt catalog: invalid table name {name!r}")
+        cols = tuple(
+            Column(c["name"], ColumnType(c["type"]), c["nullable"])
+            for c in d["columns"]
+        )
+        return TableMeta(
+            table_id=d["table_id"],
+            name=name,
+            columns=cols,
+            storage_track=StorageTrack(d["storage_track"]),
+            page_size=d["page_size"],
+            format_version=d["format_version"],
+        )
+    except (KeyError, TypeError) as e:
+        raise ValueError(f"corrupt catalog: malformed table entry ({e})") from e
 
 
 def create_table(

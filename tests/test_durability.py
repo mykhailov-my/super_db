@@ -81,3 +81,22 @@ def test_temp_in_same_dir_supports_replace(tmp_path, monkeypatch):
     # recorded_dirs will be empty and the assertion fails (expected RED)
     assert len(recorded_dirs) == 1
     assert recorded_dirs[0] == tmp_path
+
+
+def test_no_temp_left_on_write_failure(tmp_path, monkeypatch):
+    # If os.write raises, the temp file must be cleaned up and any existing
+    # target left intact (the atomic-write contract under failure).
+    target = tmp_path / "data.json"
+    write_file_atomic(target, b"original")
+
+    import super_db.common.durability as _dur
+
+    def boom(*args, **kwargs):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(_dur.os, "write", boom)
+    with pytest.raises(OSError):
+        write_file_atomic(target, b"new")
+
+    assert target.read_bytes() == b"original"
+    assert not list(tmp_path.glob("*.tmp"))
