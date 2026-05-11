@@ -5,6 +5,7 @@ from loguru import logger
 
 from super_db import __version__
 from super_db.cli.commands.init import add_init_parser, run_init
+from super_db.cli.commands.table import add_table_parser, run_table
 from super_db.common.errors import SuperDBError
 from super_db.common.log import setup_logging
 from super_db.render.rich_renderer import RichRenderer
@@ -21,6 +22,10 @@ def build_parser() -> argparse.ArgumentParser:
     db_parser = nouns.add_parser("db", help="database-level commands")
     db_verbs = db_parser.add_subparsers(dest="verb", title="db commands", metavar="<verb>")
     add_init_parser(db_verbs)
+
+    table_parser = nouns.add_parser("table", help="table-level commands")
+    table_verbs = table_parser.add_subparsers(dest="verb", title="table commands", metavar="<verb>")
+    add_table_parser(table_verbs)
     return parser
 
 
@@ -40,10 +45,16 @@ def main() -> None:
     try:
         if args.noun == "db" and args.verb == "init":
             run_init(args, renderer)
+        elif args.noun == "table":
+            run_table(args, renderer)
         else:
             parser.print_help(sys.stderr)
             sys.exit(1)
     except SuperDBError as exc:
         logger.debug("cli: failed reason={exc!r}", exc=exc)
+        renderer.render_error(str(exc))
+        sys.exit(1)
+    except ValueError as exc:
+        logger.debug("cli: validation error reason={exc!r}", exc=exc)
         renderer.render_error(str(exc))
         sys.exit(1)
