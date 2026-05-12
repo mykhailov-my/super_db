@@ -75,7 +75,7 @@ def _table_from_dict(d: dict) -> TableMeta:
     try:
         name = d["name"]
         if not _IDENT.match(name):
-            raise ValueError(f"corrupt catalog: invalid table name {name!r}")
+            raise ValueError(f"invalid table name {name!r}")
         cols = tuple(
             Column(c["name"], ColumnType(c["type"]), c["nullable"])
             for c in d["columns"]
@@ -88,7 +88,7 @@ def _table_from_dict(d: dict) -> TableMeta:
             page_size=d["page_size"],
             format_version=d["format_version"],
         )
-    except (KeyError, TypeError) as e:
+    except (KeyError, TypeError, ValueError) as e:
         raise ValueError(f"corrupt catalog: malformed table entry ({e})") from e
 
 
