@@ -1,0 +1,106 @@
+from __future__ import annotations
+
+from .page_layout import PAGE_HDR, SLOT, HEADER_SIZE, SLOT_ENTRY_SIZE, SLOT_FLAG_LIVE
+from ..common.constants import FORMAT_VERSION
+from ..common.errors import PageFullError, StorageError
+
+
+class Page:
+    """Fixed-size in-memory slotted-page buffer.
+
+    Layout: 8-byte header | slot directory (grows up) | free space | tuples (grows down)
+    page_size is NOT stored in the header (D-03); the caller always supplies it.
+    """
+
+    def __init__(self, buf: bytearray, page_size: int) -> None:
+        self._buf = buf
+        self.page_size = page_size
+
+    @classmethod
+    def new(cls, page_size: int, format_version: int = FORMAT_VERSION) -> Page:
+        buf = bytearray(page_size)
+        mv = memoryview(buf)
+        mv[0:HEADER_SIZE] = PAGE_HDR.pack(format_version, 0, HEADER_SIZE, page_size)
+        return cls(buf, page_size)
+
+    @classmethod
+    def from_bytes(cls, data: bytes, page_size: int) -> Page:
+        if len(data) != page_size:
+            raise StorageError(
+                f"expected {page_size} bytes, got {len(data)}"
+            )
+        return cls(bytearray(data), page_size)
+
+    def to_bytes(self) -> bytes:
+        return bytes(self._buf)
+
+    def _header(self) -> tuple[int, int, int, int]:
+        return PAGE_HDR.unpack(self._buf[0:HEADER_SIZE])
+
+    @property
+    def format_version(self) -> int:
+        return self._header()[0]
+
+    @property
+    def slot_count(self) -> int:
+        return self._header()[1]
+
+    @property
+    def free_start(self) -> int:
+        return self._header()[2]
+
+    @property
+    def free_end(self) -> int:
+        return self._header()[3]
+
+    @property
+    def free_space(self) -> int:
+        return self.free_end - self.free_start
+
+    def can_fit(self, t: int) -> bool:
+        return (self.free_end - self.free_start) >= t + SLOT_ENTRY_SIZE
+
+    def insert_tuple(self, record: bytes) -> int:
+        t = len(record)
+        if not self.can_fit(t):
+            raise PageFullError(f"record {t}B exceeds max for page_size {self.page_size}")
+        mv = memoryview(self._buf)
+        fv, sc, fs, fe = self._header()
+        fe -= t
+        mv[fe:fe + t] = record
+        mv[fs:fs + SLOT_ENTRY_SIZE] = SLOT.pack(fe, t, SLOT_FLAG_LIVE)
+        mv[0:HEADER_SIZE] = PAGE_HDR.pack(fv, sc + 1, fs + SLOT_ENTRY_SIZE, fe)
+        return sc
+
+    def _slot(self, slot_id: int) -> tuple[int, int, int]:
+        if not (0 <= slot_id < self.slot_count):
+            raise StorageError(f"slot_id {slot_id} out of range (slot_count={self.slot_count})")
+        base = HEADER_SIZE + slot_id * SLOT_ENTRY_SIZE
+        return SLOT.unpack(self._buf[base:base + SLOT_ENTRY_SIZE])
+
+    def get_tuple(self, slot_id: int) -> bytes:
+        off, ln, _fl = self._slot(slot_id)
+        if off < HEADER_SIZE or ln < 0 or off + ln > self.page_size:
+            raise StorageError(f"slot {slot_id} offset/length out of bounds")
+        return bytes(self._buf[off:off + ln])
+
+    def is_live(self, slot_id: int) -> bool:
+        return bool(self._slot(slot_id)[2] & SLOT_FLAG_LIVE)
+
+    def tombstone_slot(self, slot_id: int) -> None:
+        off, ln, fl = self._slot(slot_id)
+        base = HEADER_SIZE + slot_id * SLOT_ENTRY_SIZE
+        mv = memoryview(self._buf)
+        mv[base:base + SLOT_ENTRY_SIZE] = SLOT.pack(off, ln, fl & ~SLOT_FLAG_LIVE)
+
+    def live_slots(self) -> list[int]:
+        result = []
+        for sid in range(self.slot_count):
+            base = HEADER_SIZE + sid * SLOT_ENTRY_SIZE
+            off, ln, fl = SLOT.unpack(self._buf[base:base + SLOT_ENTRY_SIZE])
+            if not (fl & SLOT_FLAG_LIVE):
+                continue
+            if off < HEADER_SIZE or ln < 0 or off + ln > self.page_size:
+                continue
+            result.append(sid)
+        return result
