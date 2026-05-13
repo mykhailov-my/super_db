@@ -8,3 +8,11 @@ class InitError(SuperDBError):
 
 class OpenError(SuperDBError):
     """Raised when an existing path is not a valid/compatible super_db database."""
+
+
+class StorageError(SuperDBError):
+    """Raised for page-level or tuple-codec failures (malformed buffer, bad layout)."""
+
+
+class PageFullError(StorageError):
+    """Raised when a record does not fit in an empty page (exceeds the page's max record size)."""
