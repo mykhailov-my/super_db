@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from .page_layout import PAGE_HDR, SLOT, HEADER_SIZE, SLOT_ENTRY_SIZE, SLOT_FLAG_LIVE
 from ..common.constants import FORMAT_VERSION
 from ..common.errors import PageFullError, StorageError
+from .page_layout import HEADER_SIZE, PAGE_HDR, SLOT, SLOT_ENTRY_SIZE, SLOT_FLAG_LIVE
 
 
 class Page:
