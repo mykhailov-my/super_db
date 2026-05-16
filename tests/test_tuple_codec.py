@@ -90,7 +90,7 @@ def test_int_negative_out_of_range_raises():
 
 
 def test_truncated_text_raises():
-    # Hand-craft a record: bitmap=0x00, then TEXT length prefix claiming 1000 bytes but only 'hi' follows
+    # bitmap=0x00, TEXT length prefix claims 1000 bytes but only 'hi' follows
     text_schema = [Column("t", ColumnType.TEXT, False)]
     bad = bytes.fromhex("00") + (1000).to_bytes(2, "little") + b"hi"
     with pytest.raises(StorageError):
