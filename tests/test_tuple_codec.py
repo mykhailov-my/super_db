@@ -120,3 +120,13 @@ def test_mismatched_lengths_raises():
 def test_all_null_round_trip():
     vals = [None, None]
     assert decode_tuple(encode_tuple(SCHEMA, vals), SCHEMA) == vals
+
+
+def test_invalid_utf8_text_raises_storage_error():
+    # A TEXT payload with non-UTF-8 bytes must surface StorageError, not a raw
+    # UnicodeDecodeError, so malformed pages are caught by the storage contract.
+    schema = [Column("name", ColumnType.TEXT, True)]
+    # bitmap 0x00 (not null), u16 length 2, then two invalid bytes
+    record = b"\x00" + b"\x02\x00" + b"\xff\xfe"
+    with pytest.raises(StorageError, match="invalid UTF-8"):
+        decode_tuple(record, schema)

@@ -142,3 +142,10 @@ def test_live_slots_excludes_tombstoned():
     p.insert_tuple(b"c")
     p.tombstone_slot(1)
     assert p.live_slots() == [0, 2]
+
+
+def test_page_size_over_u16_rejected():
+    # free_end is a u16 header field; a page_size above 65535 must be rejected
+    # cleanly rather than raising a raw struct.error.
+    with pytest.raises(StorageError):
+        Page.new(70000)

@@ -23,11 +23,19 @@ def test_constants_values():
 # ---------------------------------------------------------------------------
 
 def test_error_hierarchy():
-    from super_db.common.errors import SuperDBError, InitError, OpenError
+    from super_db.common.errors import (
+        InitError,
+        OpenError,
+        PageFullError,
+        StorageError,
+        SuperDBError,
+    )
 
     assert issubclass(SuperDBError, Exception)
     assert issubclass(InitError, SuperDBError)
     assert issubclass(OpenError, SuperDBError)
+    assert issubclass(StorageError, SuperDBError)
+    assert issubclass(PageFullError, StorageError)
 
 
 def test_init_error_is_catchable_as_superdb_error():

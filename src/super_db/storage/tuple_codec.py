@@ -92,7 +92,10 @@ def _walk_fields(record: bytes, columns: list[Column]) -> Iterator[tuple]:
                 raise StorageError(
                     f"TEXT field '{col.name}' length {ln} exceeds remaining bytes"
                 )
-            val = record[pos + 2 : pos + 2 + ln].decode("utf-8")
+            try:
+                val = record[pos + 2 : pos + 2 + ln].decode("utf-8")
+            except UnicodeDecodeError as exc:
+                raise StorageError(f"TEXT field '{col.name}' contains invalid UTF-8") from exc
             yield col, val, pos, 2 + ln
             pos += 2 + ln
 

@@ -15,4 +15,4 @@ class StorageError(SuperDBError):
 
 
 class PageFullError(StorageError):
-    """Raised when a record does not fit in an empty page (exceeds the page's max record size)."""
+    """Raised when a record does not fit in a page's available free space."""

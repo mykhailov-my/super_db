@@ -18,6 +18,8 @@ class Page:
 
     @classmethod
     def new(cls, page_size: int, format_version: int = FORMAT_VERSION) -> Page:
+        if not HEADER_SIZE < page_size <= 0xFFFF:
+            raise StorageError(f"page_size {page_size} must be in ({HEADER_SIZE}, 65535]")
         buf = bytearray(page_size)
         mv = memoryview(buf)
         mv[0:HEADER_SIZE] = PAGE_HDR.pack(format_version, 0, HEADER_SIZE, page_size)
@@ -80,7 +82,7 @@ class Page:
 
     def get_tuple(self, slot_id: int) -> bytes:
         off, ln, _fl = self._slot(slot_id)
-        if off < HEADER_SIZE or ln < 0 or off + ln > self.page_size:
+        if off < HEADER_SIZE or off + ln > self.page_size:
             raise StorageError(f"slot {slot_id} offset/length out of bounds")
         return bytes(self._buf[off:off + ln])
 
@@ -100,7 +102,7 @@ class Page:
             off, ln, fl = SLOT.unpack(self._buf[base:base + SLOT_ENTRY_SIZE])
             if not (fl & SLOT_FLAG_LIVE):
                 continue
-            if off < HEADER_SIZE or ln < 0 or off + ln > self.page_size:
+            if off < HEADER_SIZE or off + ln > self.page_size:
                 continue
             result.append(sid)
         return result
