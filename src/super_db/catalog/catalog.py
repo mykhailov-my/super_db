@@ -158,17 +158,15 @@ def drop_table(db_dir: Path, name: str) -> None:
 
 
 def insert(handle: TableHandle, record: dict) -> RID:
-    """Insert a record into the table's heap and return its RID.
-
-    Not implemented in Phase 2. Phase 4 implements this via the slotted-page
-    heap file. record is a dict mapping column names to Python values.
-    """
-    raise NotImplementedError("insert is implemented in Phase 4")
+    """Insert a record into the table's heap and return its RID."""
+    from super_db.storage.engine import StorageEngine  # local import avoids circular dep
+    return StorageEngine(handle.db_dir).insert(handle.meta.name, record)
 
 
 def get(handle: TableHandle, rid: RID) -> dict:
-    """Return the record at rid. Phase 4 implementation."""
-    raise NotImplementedError("get is implemented in Phase 4")
+    """Return the live record at rid as a dict."""
+    from super_db.storage.engine import StorageEngine  # local import avoids circular dep
+    return StorageEngine(handle.db_dir).get(handle.meta.name, rid)
 
 
 def scan(handle: TableHandle):
