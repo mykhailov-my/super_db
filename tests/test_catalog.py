@@ -9,8 +9,6 @@ from super_db.catalog.catalog import (
     delete,
     describe_table,
     drop_table,
-    get,
-    insert,
     list_tables,
     open_table,
     scan,
@@ -206,12 +204,6 @@ def test_record_ops_are_stubs(db_dir: Path) -> None:
     meta = create_table(db_dir, "t", [("id", "INT", False)])
     handle = open_table(db_dir, "t")
     rid = RID(0, 0)
-
-    with pytest.raises(NotImplementedError):
-        insert(handle, {"id": 1})
-
-    with pytest.raises(NotImplementedError):
-        get(handle, rid)
 
     with pytest.raises(NotImplementedError):
         next(iter(scan(handle)))
