@@ -16,3 +16,7 @@ class StorageError(SuperDBError):
 
 class PageFullError(StorageError):
     """Raised when a record does not fit in a page's available free space."""
+
+
+class RecordNotFoundError(StorageError):
+    """Raised when a RID addresses no live record (out-of-range, tombstoned, or never written)."""
