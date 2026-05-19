@@ -202,13 +202,11 @@ def test_create_table_custom_page_size(db_dir: Path) -> None:
 
 
 def test_record_ops_are_stubs(db_dir: Path) -> None:
+    # scan is implemented in Phase 5; update and delete remain stubs until Phase 6
     init_db(db_dir)
     create_table(db_dir, "t", [("id", "INT", False)])
     handle = open_table(db_dir, "t")
     rid = RID(0, 0)
-
-    with pytest.raises(NotImplementedError):
-        scan(handle)
 
     with pytest.raises(NotImplementedError):
         update(handle, rid, {"id": 2})
