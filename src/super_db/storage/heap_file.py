@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 
 from ..common.durability import write_page
-from ..common.errors import PageFullError, RecordNotFoundError
+from ..common.errors import PageFullError, RecordNotFoundError, StorageError
 from ..storage.page import Page
 from ..storage.rid import RID
 
@@ -38,7 +38,10 @@ class HeapFile:
         if not Page.new(ps).can_fit(len(record)):
             raise PageFullError(f"record {len(record)}B cannot fit in any {ps}B page")
 
-        fd = os.open(str(self._path), os.O_RDWR)
+        try:
+            fd = os.open(str(self._path), os.O_RDWR)
+        except FileNotFoundError as e:
+            raise StorageError(f"heap file not found: {self._path}") from e
         try:
             page_count = os.fstat(fd).st_size // ps
             if page_count == 0:

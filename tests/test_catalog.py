@@ -9,6 +9,8 @@ from super_db.catalog.catalog import (
     delete,
     describe_table,
     drop_table,
+    get,
+    insert,
     list_tables,
     open_table,
     scan,
@@ -201,18 +203,29 @@ def test_create_table_custom_page_size(db_dir: Path) -> None:
 
 def test_record_ops_are_stubs(db_dir: Path) -> None:
     init_db(db_dir)
-    meta = create_table(db_dir, "t", [("id", "INT", False)])
+    create_table(db_dir, "t", [("id", "INT", False)])
     handle = open_table(db_dir, "t")
     rid = RID(0, 0)
 
     with pytest.raises(NotImplementedError):
-        next(iter(scan(handle)))
+        scan(handle)
 
     with pytest.raises(NotImplementedError):
         update(handle, rid, {"id": 2})
 
     with pytest.raises(NotImplementedError):
         delete(handle, rid)
+
+
+def test_insert_get_via_handle_roundtrip(db_dir: Path) -> None:
+    # catalog.insert/get delegate to the heap using the handle directly
+    # (no second catalog read, no StorageEngine round-trip).
+    init_db(db_dir)
+    create_table(db_dir, "t", [("id", "INT", False), ("name", "TEXT", True)])
+    handle = open_table(db_dir, "t")
+
+    rid = insert(handle, {"id": 3, "name": "carol"})
+    assert get(handle, rid) == {"id": 3, "name": "carol"}
 
 
 def test_rid_definition() -> None:

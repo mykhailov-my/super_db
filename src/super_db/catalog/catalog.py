@@ -159,14 +159,28 @@ def drop_table(db_dir: Path, name: str) -> None:
 
 def insert(handle: TableHandle, record: dict) -> RID:
     """Insert a record into the table's heap and return its RID."""
-    from super_db.storage.engine import StorageEngine  # local import avoids circular dep
-    return StorageEngine(handle.db_dir).insert(handle.meta.name, record)
+    # local imports avoid a circular dep (heap_file/tuple_codec don't import catalog)
+    from super_db.common.errors import StorageError
+    from super_db.storage.heap_file import HeapFile
+    from super_db.storage.tuple_codec import encode_tuple
+
+    cols = list(handle.meta.columns)
+    missing = [c.name for c in cols if c.name not in record]
+    if missing:
+        raise StorageError(f"record missing columns: {', '.join(missing)}")
+    raw = encode_tuple(cols, [record[c.name] for c in cols])
+    return HeapFile(handle.heap_path, handle.meta.page_size).insert(raw)
 
 
 def get(handle: TableHandle, rid: RID) -> dict:
     """Return the live record at rid as a dict."""
-    from super_db.storage.engine import StorageEngine  # local import avoids circular dep
-    return StorageEngine(handle.db_dir).get(handle.meta.name, rid)
+    from super_db.storage.heap_file import HeapFile
+    from super_db.storage.tuple_codec import decode_tuple
+
+    cols = list(handle.meta.columns)
+    raw = HeapFile(handle.heap_path, handle.meta.page_size).get(rid)
+    values = decode_tuple(raw, cols)
+    return {c.name: v for c, v in zip(cols, values, strict=True)}
 
 
 def scan(handle: TableHandle):

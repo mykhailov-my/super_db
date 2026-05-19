@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from super_db.common.errors import RecordNotFoundError
+from super_db.common.errors import RecordNotFoundError, StorageError
 from super_db.db import init_db
 from super_db.storage.engine import StorageEngine
 from super_db.storage.rid import RID
@@ -72,3 +72,14 @@ def test_get_missing_rid_raises(db_dir: Path) -> None:
     # Act / Assert
     with pytest.raises(RecordNotFoundError):
         engine.get("t", RID(99, 0))
+
+
+def test_insert_missing_column_raises(db_dir: Path) -> None:
+    # Arrange
+    init_db(db_dir)
+    engine = StorageEngine(db_dir)
+    engine.create_table("t", [("id", "INT", False), ("name", "TEXT", True)])
+
+    # Act / Assert — a record missing a column is a clear StorageError, not a bare KeyError
+    with pytest.raises(StorageError, match="name"):
+        engine.insert("t", {"id": 1})

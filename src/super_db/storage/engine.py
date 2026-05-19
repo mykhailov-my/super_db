@@ -21,6 +21,7 @@ from super_db.catalog.catalog import (
 )
 from super_db.catalog.schema import TableMeta
 from super_db.common.constants import DEFAULT_PAGE_SIZE
+from super_db.common.errors import StorageError
 from super_db.storage.heap_file import HeapFile
 from super_db.storage.rid import RID
 from super_db.storage.tuple_codec import decode_tuple, encode_tuple
@@ -66,6 +67,9 @@ class StorageEngine:
         """Encode record and append to the table's heap. Returns RID."""
         handle = open_table(self._db_dir, table)
         cols = list(handle.meta.columns)
+        missing = [c.name for c in cols if c.name not in record]
+        if missing:
+            raise StorageError(f"record missing columns: {', '.join(missing)}")
         values = [record[c.name] for c in cols]
         raw = encode_tuple(cols, values)
         return HeapFile(handle.heap_path, handle.meta.page_size).insert(raw)

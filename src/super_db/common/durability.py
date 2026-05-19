@@ -43,7 +43,10 @@ def write_page(fd: int, page_id: int, page_bytes: bytes, page_size: int) -> None
     Raises StorageError on a short write (POSIX pwrite should not short-write
     a 4 KiB buffer, but checking the return is the correct pattern).
     """
-    assert len(page_bytes) == page_size
+    if len(page_bytes) != page_size:
+        raise StorageError(
+            f"write_page expects a full {page_size}B page, got {len(page_bytes)}B"
+        )
     n = os.pwrite(fd, page_bytes, page_id * page_size)
     if n != page_size:
         raise StorageError(f"pwrite short write: wrote {n}/{page_size} bytes")
