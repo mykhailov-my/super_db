@@ -81,3 +81,9 @@ class StorageEngine:
         raw = HeapFile(handle.heap_path, handle.meta.page_size).get(rid)
         values = decode_tuple(raw, cols)
         return {c.name: v for c, v in zip(cols, values)}
+
+    def scan(self, table: str) -> list:
+        """Return all live records in the table's heap as a list[Row]."""
+        from super_db.catalog.catalog import scan as _scan
+
+        return _scan(open_table(self._db_dir, table))
