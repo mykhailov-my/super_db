@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -183,9 +184,37 @@ def get(handle: TableHandle, rid: RID) -> dict:
     return {c.name: v for c, v in zip(cols, values, strict=True)}
 
 
-def scan(handle: TableHandle):
-    """Yield all live records. Phase 5 implementation."""
-    raise NotImplementedError("scan is implemented in Phase 5")
+def scan(handle: TableHandle) -> list:
+    """Return all live records in the heap as a list[Row]. Order is unspecified."""
+    # local imports avoid a circular dep (matches insert/get in this file)
+    from super_db.common.errors import StorageError
+    from super_db.storage.page import Page
+    from super_db.storage.rid import RID
+    from super_db.storage.row import Row
+    from super_db.storage.tuple_codec import decode_tuple
+
+    cols = list(handle.meta.columns)
+    ps = handle.meta.page_size
+    fd = os.open(str(handle.heap_path), os.O_RDONLY)
+    try:
+        size = os.fstat(fd).st_size
+        if size % ps != 0:
+            raise StorageError(
+                f"heap file size {size} is not a multiple of page_size {ps}"
+            )
+        page_count = size // ps
+        rows: list = []
+        for page_id in range(page_count):
+            raw = os.pread(fd, ps, page_id * ps)
+            page = Page.from_bytes(raw, ps)
+            for slot_id in page.live_slots():
+                record = page.get_tuple(slot_id)
+                values_list = decode_tuple(record, cols)
+                values = {c.name: v for c, v in zip(cols, values_list, strict=True)}
+                rows.append(Row(rid=RID(page_id, slot_id), values=values))
+    finally:
+        os.close(fd)
+    return rows
 
 
 def update(handle: TableHandle, rid: RID, record: dict) -> RID:
