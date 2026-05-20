@@ -24,6 +24,7 @@ from super_db.common.constants import DEFAULT_PAGE_SIZE
 from super_db.common.errors import StorageError
 from super_db.storage.heap_file import HeapFile
 from super_db.storage.rid import RID
+from super_db.storage.row import Row
 from super_db.storage.tuple_codec import decode_tuple, encode_tuple
 
 
@@ -80,9 +81,9 @@ class StorageEngine:
         cols = list(handle.meta.columns)
         raw = HeapFile(handle.heap_path, handle.meta.page_size).get(rid)
         values = decode_tuple(raw, cols)
-        return {c.name: v for c, v in zip(cols, values)}
+        return {c.name: v for c, v in zip(cols, values, strict=True)}
 
-    def scan(self, table: str) -> list:
+    def scan(self, table: str) -> list[Row]:
         """Return all live records in the table's heap as a list[Row]."""
         from super_db.catalog.catalog import scan as _scan
 

@@ -8,6 +8,7 @@ from super_db.catalog.schema import Column, ColumnType, StorageTrack, TableMeta
 from super_db.common.constants import CATALOG_FILE, DEFAULT_PAGE_SIZE, FORMAT_VERSION
 from super_db.common.durability import write_json_atomic
 from super_db.storage.rid import RID
+from super_db.storage.row import Row
 
 _IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _VALID_TYPES = frozenset(t.value for t in ColumnType)
@@ -184,18 +185,18 @@ def get(handle: TableHandle, rid: RID) -> dict:
     return {c.name: v for c, v in zip(cols, values, strict=True)}
 
 
-def scan(handle: TableHandle) -> list:
+def scan(handle: TableHandle) -> list[Row]:
     """Return all live records in the heap as a list[Row]. Order is unspecified."""
-    # local imports avoid a circular dep (matches insert/get in this file)
     from super_db.common.errors import StorageError
     from super_db.storage.page import Page
-    from super_db.storage.rid import RID
-    from super_db.storage.row import Row
     from super_db.storage.tuple_codec import decode_tuple
 
     cols = list(handle.meta.columns)
     ps = handle.meta.page_size
-    fd = os.open(str(handle.heap_path), os.O_RDONLY)
+    try:
+        fd = os.open(str(handle.heap_path), os.O_RDONLY)
+    except FileNotFoundError as e:
+        raise StorageError(f"heap file not found: {handle.heap_path}") from e
     try:
         size = os.fstat(fd).st_size
         if size % ps != 0:

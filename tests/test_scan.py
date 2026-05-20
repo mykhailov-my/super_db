@@ -8,8 +8,6 @@ from super_db.catalog.catalog import create_table, insert, open_table, scan
 from super_db.common.errors import StorageError
 from super_db.db import init_db
 from super_db.storage.page import Page
-from super_db.storage.rid import RID
-from super_db.storage.row import Row
 
 
 def _as_set(rows):
@@ -119,5 +117,17 @@ def test_scan_corrupt_heap_raises(db_dir: Path) -> None:
     handle.heap_path.write_bytes(b"x" * (handle.meta.page_size - 1))
 
     # Act / Assert
+    with pytest.raises(StorageError):
+        scan(handle)
+
+
+def test_scan_missing_heap_raises(db_dir: Path) -> None:
+    # Arrange — heap file deleted after the handle was opened
+    init_db(db_dir)
+    create_table(db_dir, "t", [("id", "INT", False)])
+    handle = open_table(db_dir, "t")
+    handle.heap_path.unlink()
+
+    # Act / Assert — a missing heap surfaces StorageError, not a raw OSError
     with pytest.raises(StorageError):
         scan(handle)
