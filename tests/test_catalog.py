@@ -6,7 +6,6 @@ import pytest
 from super_db.catalog.catalog import (
     TableHandle,
     create_table,
-    delete,
     describe_table,
     drop_table,
     get,
@@ -14,7 +13,6 @@ from super_db.catalog.catalog import (
     list_tables,
     open_table,
     scan,
-    update,
 )
 from super_db.db import init_db
 from super_db.storage.rid import RID
@@ -199,20 +197,6 @@ def test_create_table_custom_page_size(db_dir: Path) -> None:
 
     meta = describe_table(db_dir, "wide")
     assert meta.page_size == 8192
-
-
-def test_record_ops_are_stubs(db_dir: Path) -> None:
-    # scan is implemented in Phase 5; update and delete remain stubs until Phase 6
-    init_db(db_dir)
-    create_table(db_dir, "t", [("id", "INT", False)])
-    handle = open_table(db_dir, "t")
-    rid = RID(0, 0)
-
-    with pytest.raises(NotImplementedError):
-        update(handle, rid, {"id": 2})
-
-    with pytest.raises(NotImplementedError):
-        delete(handle, rid)
 
 
 def test_insert_get_via_handle_roundtrip(db_dir: Path) -> None:
