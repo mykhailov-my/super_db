@@ -219,10 +219,21 @@ def scan(handle: TableHandle) -> list[Row]:
 
 
 def update(handle: TableHandle, rid: RID, record: dict) -> RID:
-    """Update record at rid. Returns new RID if relocation occurred. Phase 6."""
-    raise NotImplementedError("update is implemented in Phase 6")
+    """Update record at rid in-place or relocate. Returns RID (new if relocated)."""
+    from super_db.common.errors import StorageError
+    from super_db.storage.heap_file import HeapFile
+    from super_db.storage.tuple_codec import encode_tuple
+
+    cols = list(handle.meta.columns)
+    missing = [c.name for c in cols if c.name not in record]
+    if missing:
+        raise StorageError(f"record missing columns: {', '.join(missing)}")
+    raw = encode_tuple(cols, [record[c.name] for c in cols])
+    return HeapFile(handle.heap_path, handle.meta.page_size).update(rid, raw)
 
 
 def delete(handle: TableHandle, rid: RID) -> None:
-    """Tombstone the record at rid. Phase 6 implementation."""
-    raise NotImplementedError("delete is implemented in Phase 6")
+    """Tombstone the record at rid. Raises RecordNotFoundError if not live."""
+    from super_db.storage.heap_file import HeapFile
+
+    HeapFile(handle.heap_path, handle.meta.page_size).delete(rid)
