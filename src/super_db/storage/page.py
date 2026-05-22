@@ -95,6 +95,16 @@ class Page:
         mv = memoryview(self._buf)
         mv[base:base + SLOT_ENTRY_SIZE] = SLOT.pack(off, ln, fl & ~SLOT_FLAG_LIVE)
 
+    def overwrite_tuple(self, slot_id: int, record: bytes) -> None:
+        """Overwrite a slot's tuple bytes in place. record must be the exact same length."""
+        off, ln, _fl = self._slot(slot_id)
+        if len(record) != ln:
+            raise StorageError(
+                f"overwrite_tuple: record length {len(record)} != slot length {ln}"
+            )
+        mv = memoryview(self._buf)
+        mv[off:off + ln] = record
+
     def live_slots(self) -> list[int]:
         result = []
         for sid in range(self.slot_count):

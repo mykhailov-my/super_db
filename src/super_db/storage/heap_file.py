@@ -87,3 +87,83 @@ class HeapFile:
             return page.get_tuple(rid.slot_id)
         finally:
             os.close(fd)
+
+    def delete(self, rid: RID) -> None:
+        """Tombstone the slot at rid durably. Raises RecordNotFoundError if not live."""
+        ps = self._page_size
+        try:
+            fd = os.open(str(self._path), os.O_RDWR)
+        except FileNotFoundError as e:
+            raise StorageError(f"heap file not found: {self._path}") from e
+        try:
+            page_count = os.fstat(fd).st_size // ps
+            if rid.page_id >= page_count:
+                raise RecordNotFoundError(
+                    f"page_id {rid.page_id} out of range (page_count={page_count})"
+                )
+            raw = os.pread(fd, ps, rid.page_id * ps)
+            page = Page.from_bytes(raw, ps)
+            if rid.slot_id >= page.slot_count:
+                raise RecordNotFoundError(
+                    f"slot_id {rid.slot_id} out of range (slot_count={page.slot_count})"
+                )
+            if not page.is_live(rid.slot_id):
+                raise RecordNotFoundError(
+                    f"RID ({rid.page_id}, {rid.slot_id}) is tombstoned"
+                )
+            page.tombstone_slot(rid.slot_id)
+            write_page(fd, rid.page_id, page.to_bytes(), ps)
+        finally:
+            os.close(fd)
+
+    def update(self, rid: RID, record_bytes: bytes) -> RID:
+        """Update the record at rid in place or relocate if the length changes.
+
+        Same byte length: overwrites in place, returns the same RID.
+        Different byte length: inserts the new record first, then tombstones the old
+        slot (D-03 — insert before tombstone so a crash leaves a recoverable duplicate,
+        never data loss). Returns the new RID.
+
+        Raises RecordNotFoundError if rid does not address a live record.
+        """
+        ps = self._page_size
+        try:
+            fd = os.open(str(self._path), os.O_RDWR)
+        except FileNotFoundError as e:
+            raise StorageError(f"heap file not found: {self._path}") from e
+        try:
+            page_count = os.fstat(fd).st_size // ps
+            if rid.page_id >= page_count:
+                raise RecordNotFoundError(
+                    f"page_id {rid.page_id} out of range (page_count={page_count})"
+                )
+            raw = os.pread(fd, ps, rid.page_id * ps)
+            page = Page.from_bytes(raw, ps)
+            if rid.slot_id >= page.slot_count:
+                raise RecordNotFoundError(
+                    f"slot_id {rid.slot_id} out of range (slot_count={page.slot_count})"
+                )
+            if not page.is_live(rid.slot_id):
+                raise RecordNotFoundError(
+                    f"RID ({rid.page_id}, {rid.slot_id}) is tombstoned"
+                )
+            _off, old_len, _fl = page._slot(rid.slot_id)
+            if len(record_bytes) == old_len:
+                # In-place: overwrite tuple bytes, one durable write, same RID.
+                page.overwrite_tuple(rid.slot_id, record_bytes)
+                write_page(fd, rid.page_id, page.to_bytes(), ps)
+                return rid
+            else:
+                # Relocate (D-03): insert new record FIRST so a crash between the two
+                # fsyncs leaves both copies live (duplicate), not a lost record.
+                new_rid = self.insert(record_bytes)
+                # Re-read the old page after insert: insert may have written to it
+                # (if the old page still had free space), so we need the current state
+                # before tombstoning to avoid clobbering newly inserted data.
+                raw2 = os.pread(fd, ps, rid.page_id * ps)
+                page2 = Page.from_bytes(raw2, ps)
+                page2.tombstone_slot(rid.slot_id)
+                write_page(fd, rid.page_id, page2.to_bytes(), ps)
+                return new_rid
+        finally:
+            os.close(fd)

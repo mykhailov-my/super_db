@@ -136,3 +136,121 @@ def test_get_tombstoned_slot(tmp_path):
     # Act + Assert: get must raise for the tombstoned slot
     with pytest.raises(RecordNotFoundError):
         hf.get(rid)
+
+
+# --- delete tests ---
+
+def test_delete_tombstones_slot(tmp_path):
+    # Arrange
+    hf, _ = _new_heap(tmp_path)
+    rid = hf.insert(b"to-be-deleted")
+    # Act
+    result = hf.delete(rid)
+    # Assert: returns None and slot is now dead
+    assert result is None
+    with pytest.raises(RecordNotFoundError):
+        hf.get(rid)
+
+
+def test_delete_durable_across_reopen(tmp_path):
+    # Arrange
+    hf, path = _new_heap(tmp_path)
+    rid = hf.insert(b"durable-delete")
+    hf.delete(rid)
+    # Act: reopen with a fresh HeapFile instance (simulates restart)
+    hf2 = HeapFile(path, DEFAULT_PAGE_SIZE)
+    # Assert: slot is still dead after reopen
+    with pytest.raises(RecordNotFoundError):
+        hf2.get(rid)
+
+
+def test_delete_already_dead_raises(tmp_path):
+    # Arrange
+    hf, _ = _new_heap(tmp_path)
+    rid = hf.insert(b"delete-me")
+    hf.delete(rid)
+    # Act + Assert: second delete must raise, not silently succeed
+    with pytest.raises(RecordNotFoundError):
+        hf.delete(rid)
+
+
+def test_delete_out_of_range_page_raises(tmp_path):
+    hf, _ = _new_heap(tmp_path)
+    hf.insert(b"one")
+    with pytest.raises(RecordNotFoundError):
+        hf.delete(RID(99, 0))
+
+
+def test_delete_out_of_range_slot_raises(tmp_path):
+    hf, _ = _new_heap(tmp_path)
+    hf.insert(b"one")
+    with pytest.raises(RecordNotFoundError):
+        hf.delete(RID(0, 99))
+
+
+# --- update tests ---
+
+def test_update_inplace_same_rid(tmp_path):
+    # Arrange: same byte length -> in-place, RID unchanged
+    hf, _ = _new_heap(tmp_path)
+    original = b"hello"
+    rid = hf.insert(original)
+    # Act
+    new_rid = hf.update(rid, b"world")
+    # Assert: same RID, new bytes
+    assert new_rid == rid
+    assert hf.get(rid) == b"world"
+
+
+def test_update_inplace_durable(tmp_path):
+    # Arrange
+    hf, path = _new_heap(tmp_path)
+    rid = hf.insert(b"aaaaa")
+    hf.update(rid, b"bbbbb")
+    # Act: reopen to confirm durable
+    hf2 = HeapFile(path, DEFAULT_PAGE_SIZE)
+    assert hf2.get(rid) == b"bbbbb"
+
+
+def test_update_relocate_new_rid(tmp_path):
+    # Arrange: different byte length -> relocate, new RID
+    hf, _ = _new_heap(tmp_path)
+    rid = hf.insert(b"short")
+    # Act: longer record forces relocation
+    new_rid = hf.update(rid, b"a-longer-record")
+    # Assert: different RID
+    assert new_rid != rid
+    # new RID returns new bytes
+    assert hf.get(new_rid) == b"a-longer-record"
+    # old RID is tombstoned
+    with pytest.raises(RecordNotFoundError):
+        hf.get(rid)
+
+
+def test_update_relocate_durable(tmp_path):
+    # Arrange
+    hf, path = _new_heap(tmp_path)
+    rid = hf.insert(b"x")
+    new_rid = hf.update(rid, b"much-longer-bytes-here")
+    # Act: reopen
+    hf2 = HeapFile(path, DEFAULT_PAGE_SIZE)
+    assert hf2.get(new_rid) == b"much-longer-bytes-here"
+    with pytest.raises(RecordNotFoundError):
+        hf2.get(rid)
+
+
+def test_update_missing_rid_raises(tmp_path):
+    # Non-existent page_id raises before any write
+    hf, _ = _new_heap(tmp_path)
+    hf.insert(b"something")
+    with pytest.raises(RecordNotFoundError):
+        hf.update(RID(99, 0), b"new-data")
+
+
+def test_update_dead_rid_raises(tmp_path):
+    # Tombstoned slot raises before any write
+    hf, _ = _new_heap(tmp_path)
+    rid = hf.insert(b"alive")
+    hf.delete(rid)
+    with pytest.raises(RecordNotFoundError):
+        hf.update(rid, b"alive")

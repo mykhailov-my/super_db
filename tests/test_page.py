@@ -149,3 +149,45 @@ def test_page_size_over_u16_rejected():
     # cleanly rather than raising a raw struct.error.
     with pytest.raises(StorageError):
         Page.new(70000)
+
+
+def test_overwrite_tuple_same_length():
+    # Arrange
+    p = Page.new(4096)
+    original = b"hello"
+    p.insert_tuple(original)
+    slot_count_before = p.slot_count
+    free_start_before = p.free_start
+    free_end_before = p.free_end
+    # Act
+    p.overwrite_tuple(0, b"world")
+    # Assert: tuple bytes updated, slot entry and header unchanged
+    assert p.get_tuple(0) == b"world"
+    assert p.slot_count == slot_count_before
+    assert p.free_start == free_start_before
+    assert p.free_end == free_end_before
+    assert p.is_live(0)
+
+
+def test_overwrite_tuple_length_mismatch_raises():
+    # Arrange
+    p = Page.new(4096)
+    p.insert_tuple(b"hello")
+    # Act + Assert: shorter record raises StorageError
+    with pytest.raises(StorageError):
+        p.overwrite_tuple(0, b"hi")
+    # Assert: buffer not mutated
+    assert p.get_tuple(0) == b"hello"
+    # Also: longer record raises StorageError
+    with pytest.raises(StorageError):
+        p.overwrite_tuple(0, b"hello!!")
+    assert p.get_tuple(0) == b"hello"
+
+
+def test_overwrite_tuple_out_of_range_raises():
+    # Arrange
+    p = Page.new(4096)
+    p.insert_tuple(b"data")
+    # Act + Assert: slot_id beyond slot_count raises StorageError (via _slot)
+    with pytest.raises(StorageError):
+        p.overwrite_tuple(99, b"xxxx")
