@@ -88,3 +88,19 @@ class StorageEngine:
         from super_db.catalog.catalog import scan as _scan
 
         return _scan(open_table(self._db_dir, table))
+
+    def update(self, table: str, rid: RID, record: dict) -> RID:
+        """Encode record and update rid in-place or relocate. Returns RID (new if relocated)."""
+        handle = open_table(self._db_dir, table)
+        cols = list(handle.meta.columns)
+        missing = [c.name for c in cols if c.name not in record]
+        if missing:
+            raise StorageError(f"record missing columns: {', '.join(missing)}")
+        values = [record[c.name] for c in cols]
+        raw = encode_tuple(cols, values)
+        return HeapFile(handle.heap_path, handle.meta.page_size).update(rid, raw)
+
+    def delete(self, table: str, rid: RID) -> None:
+        """Tombstone the record at rid. Raises RecordNotFoundError if not live."""
+        handle = open_table(self._db_dir, table)
+        HeapFile(handle.heap_path, handle.meta.page_size).delete(rid)
