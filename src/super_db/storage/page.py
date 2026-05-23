@@ -96,12 +96,18 @@ class Page:
         mv[base:base + SLOT_ENTRY_SIZE] = SLOT.pack(off, ln, fl & ~SLOT_FLAG_LIVE)
 
     def overwrite_tuple(self, slot_id: int, record: bytes) -> None:
-        """Overwrite a slot's tuple bytes in place. record must be the exact same length."""
+        """Overwrite a slot's tuple bytes in place. record must be the exact same length.
+
+        Caller must ensure the slot is live (HeapFile gates on is_live); this only
+        touches tuple bytes, never the slot's live flag.
+        """
         off, ln, _fl = self._slot(slot_id)
         if len(record) != ln:
             raise StorageError(
                 f"overwrite_tuple: record length {len(record)} != slot length {ln}"
             )
+        if off < HEADER_SIZE or off + ln > self.page_size:
+            raise StorageError(f"overwrite_tuple: slot {slot_id} offset out of bounds")
         mv = memoryview(self._buf)
         mv[off:off + ln] = record
 

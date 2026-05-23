@@ -60,31 +60,38 @@ class HeapFile:
         finally:
             os.close(fd)
 
+    def _read_live_page(self, fd: int, rid: RID) -> Page:
+        """Read the page holding rid, asserting rid points at a live record.
+
+        Raises RecordNotFoundError for an out-of-range page_id, out-of-range slot_id,
+        or a tombstoned slot — the single not-found contract shared by get/update/delete.
+        """
+        ps = self._page_size
+        page_count = os.fstat(fd).st_size // ps
+        if rid.page_id >= page_count:
+            raise RecordNotFoundError(
+                f"page_id {rid.page_id} out of range (page_count={page_count})"
+            )
+        page = Page.from_bytes(os.pread(fd, ps, rid.page_id * ps), ps)
+        if rid.slot_id >= page.slot_count:
+            raise RecordNotFoundError(
+                f"slot_id {rid.slot_id} out of range (slot_count={page.slot_count})"
+            )
+        if not page.is_live(rid.slot_id):
+            raise RecordNotFoundError(
+                f"RID ({rid.page_id}, {rid.slot_id}) is tombstoned"
+            )
+        return page
+
     def get(self, rid: RID) -> bytes:
         """Return the record bytes at rid.
 
         Raises RecordNotFoundError for out-of-range page_id, out-of-range slot_id,
         and tombstoned slots.
         """
-        ps = self._page_size
         fd = os.open(str(self._path), os.O_RDONLY)
         try:
-            page_count = os.fstat(fd).st_size // ps
-            if rid.page_id >= page_count:
-                raise RecordNotFoundError(
-                    f"page_id {rid.page_id} out of range (page_count={page_count})"
-                )
-            raw = os.pread(fd, ps, rid.page_id * ps)
-            page = Page.from_bytes(raw, ps)
-            if rid.slot_id >= page.slot_count:
-                raise RecordNotFoundError(
-                    f"slot_id {rid.slot_id} out of range (slot_count={page.slot_count})"
-                )
-            if not page.is_live(rid.slot_id):
-                raise RecordNotFoundError(
-                    f"RID ({rid.page_id}, {rid.slot_id}) is tombstoned"
-                )
-            return page.get_tuple(rid.slot_id)
+            return self._read_live_page(fd, rid).get_tuple(rid.slot_id)
         finally:
             os.close(fd)
 
@@ -96,21 +103,7 @@ class HeapFile:
         except FileNotFoundError as e:
             raise StorageError(f"heap file not found: {self._path}") from e
         try:
-            page_count = os.fstat(fd).st_size // ps
-            if rid.page_id >= page_count:
-                raise RecordNotFoundError(
-                    f"page_id {rid.page_id} out of range (page_count={page_count})"
-                )
-            raw = os.pread(fd, ps, rid.page_id * ps)
-            page = Page.from_bytes(raw, ps)
-            if rid.slot_id >= page.slot_count:
-                raise RecordNotFoundError(
-                    f"slot_id {rid.slot_id} out of range (slot_count={page.slot_count})"
-                )
-            if not page.is_live(rid.slot_id):
-                raise RecordNotFoundError(
-                    f"RID ({rid.page_id}, {rid.slot_id}) is tombstoned"
-                )
+            page = self._read_live_page(fd, rid)
             page.tombstone_slot(rid.slot_id)
             write_page(fd, rid.page_id, page.to_bytes(), ps)
         finally:
@@ -132,22 +125,8 @@ class HeapFile:
         except FileNotFoundError as e:
             raise StorageError(f"heap file not found: {self._path}") from e
         try:
-            page_count = os.fstat(fd).st_size // ps
-            if rid.page_id >= page_count:
-                raise RecordNotFoundError(
-                    f"page_id {rid.page_id} out of range (page_count={page_count})"
-                )
-            raw = os.pread(fd, ps, rid.page_id * ps)
-            page = Page.from_bytes(raw, ps)
-            if rid.slot_id >= page.slot_count:
-                raise RecordNotFoundError(
-                    f"slot_id {rid.slot_id} out of range (slot_count={page.slot_count})"
-                )
-            if not page.is_live(rid.slot_id):
-                raise RecordNotFoundError(
-                    f"RID ({rid.page_id}, {rid.slot_id}) is tombstoned"
-                )
-            _off, old_len, _fl = page._slot(rid.slot_id)
+            page = self._read_live_page(fd, rid)
+            old_len = len(page.get_tuple(rid.slot_id))
             if len(record_bytes) == old_len:
                 # In-place: overwrite tuple bytes, one durable write, same RID.
                 page.overwrite_tuple(rid.slot_id, record_bytes)

@@ -6,6 +6,7 @@ import pytest
 from super_db.catalog.catalog import (
     TableHandle,
     create_table,
+    delete,
     describe_table,
     drop_table,
     get,
@@ -13,7 +14,9 @@ from super_db.catalog.catalog import (
     list_tables,
     open_table,
     scan,
+    update,
 )
+from super_db.common.errors import RecordNotFoundError, StorageError
 from super_db.db import init_db
 from super_db.storage.rid import RID
 
@@ -208,6 +211,44 @@ def test_insert_get_via_handle_roundtrip(db_dir: Path) -> None:
 
     rid = insert(handle, {"id": 3, "name": "carol"})
     assert get(handle, rid) == {"id": 3, "name": "carol"}
+
+
+def test_update_via_handle_inplace(db_dir: Path) -> None:
+    # Same-length update keeps the RID and changes the value at the catalog layer.
+    init_db(db_dir)
+    create_table(db_dir, "t", [("id", "INT", False)])
+    handle = open_table(db_dir, "t")
+    rid = insert(handle, {"id": 1})
+
+    same_rid = update(handle, rid, {"id": 2})
+
+    assert same_rid == rid
+    assert get(handle, rid) == {"id": 2}
+
+
+def test_update_via_handle_missing_column_raises(db_dir: Path) -> None:
+    init_db(db_dir)
+    create_table(db_dir, "t", [("id", "INT", False), ("name", "TEXT", True)])
+    handle = open_table(db_dir, "t")
+    rid = insert(handle, {"id": 1, "name": "alice"})
+
+    with pytest.raises(StorageError, match="name"):
+        update(handle, rid, {"id": 2})
+
+
+def test_delete_via_handle(db_dir: Path) -> None:
+    # catalog.delete tombstones the record; a second delete raises (no idempotent no-op).
+    init_db(db_dir)
+    create_table(db_dir, "t", [("id", "INT", False)])
+    handle = open_table(db_dir, "t")
+    rid = insert(handle, {"id": 1})
+
+    delete(handle, rid)
+
+    with pytest.raises(RecordNotFoundError):
+        get(handle, rid)
+    with pytest.raises(RecordNotFoundError):
+        delete(handle, rid)
 
 
 def test_rid_definition() -> None:
