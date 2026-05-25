@@ -20,3 +20,15 @@ class PageFullError(StorageError):
 
 class RecordNotFoundError(StorageError):
     """Raised when a RID addresses no live record (out-of-range, tombstoned, or never written)."""
+
+
+class IndexKeyNotFoundError(StorageError):
+    """Raised when search(key) finds no matching entry in the B+Tree index."""
+
+
+class DuplicateKeyError(StorageError):
+    """Raised when insert(key) finds the key already present (unique index, D-08)."""
+
+
+class IndexKeyTooLongError(StorageError):
+    """Raised when a TEXT key exceeds the index's text_key_cap bytes (D-06)."""
