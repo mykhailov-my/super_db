@@ -8,8 +8,12 @@ from pathlib import Path
 from super_db.catalog.schema import Column, ColumnType, StorageTrack, TableMeta
 from super_db.common.constants import CATALOG_FILE, DEFAULT_PAGE_SIZE, FORMAT_VERSION
 from super_db.common.durability import write_json_atomic
+from super_db.common.errors import StorageError
+from super_db.storage.heap_file import HeapFile
+from super_db.storage.page import Page
 from super_db.storage.rid import RID
 from super_db.storage.row import Row
+from super_db.storage.tuple_codec import decode_tuple, encode_tuple
 
 _IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _VALID_TYPES = frozenset(t.value for t in ColumnType)
@@ -162,11 +166,6 @@ def drop_table(db_dir: Path, name: str) -> None:
 
 def insert(handle: TableHandle, record: dict) -> RID:
     """Insert a record into the table's heap and return its RID."""
-    # local imports avoid a circular dep (heap_file/tuple_codec don't import catalog)
-    from super_db.common.errors import StorageError
-    from super_db.storage.heap_file import HeapFile
-    from super_db.storage.tuple_codec import encode_tuple
-
     cols = list(handle.meta.columns)
     missing = [c.name for c in cols if c.name not in record]
     if missing:
@@ -177,9 +176,6 @@ def insert(handle: TableHandle, record: dict) -> RID:
 
 def get(handle: TableHandle, rid: RID) -> dict:
     """Return the live record at rid as a dict."""
-    from super_db.storage.heap_file import HeapFile
-    from super_db.storage.tuple_codec import decode_tuple
-
     cols = list(handle.meta.columns)
     raw = HeapFile(handle.heap_path, handle.meta.page_size).get(rid)
     values = decode_tuple(raw, cols)
@@ -188,10 +184,6 @@ def get(handle: TableHandle, rid: RID) -> dict:
 
 def scan(handle: TableHandle) -> list[Row]:
     """Return all live records in the heap as a list[Row]. Order is unspecified."""
-    from super_db.common.errors import StorageError
-    from super_db.storage.page import Page
-    from super_db.storage.tuple_codec import decode_tuple
-
     cols = list(handle.meta.columns)
     ps = handle.meta.page_size
     try:
@@ -221,10 +213,6 @@ def scan(handle: TableHandle) -> list[Row]:
 
 def update(handle: TableHandle, rid: RID, record: dict) -> RID:
     """Update record at rid in-place or relocate. Returns RID (new if relocated)."""
-    from super_db.common.errors import StorageError
-    from super_db.storage.heap_file import HeapFile
-    from super_db.storage.tuple_codec import encode_tuple
-
     cols = list(handle.meta.columns)
     missing = [c.name for c in cols if c.name not in record]
     if missing:
@@ -235,6 +223,4 @@ def update(handle: TableHandle, rid: RID, record: dict) -> RID:
 
 def delete(handle: TableHandle, rid: RID) -> None:
     """Tombstone the record at rid. Raises RecordNotFoundError if not live."""
-    from super_db.storage.heap_file import HeapFile
-
     HeapFile(handle.heap_path, handle.meta.page_size).delete(rid)

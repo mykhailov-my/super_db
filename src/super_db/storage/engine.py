@@ -22,6 +22,7 @@ from super_db.catalog.catalog import (
     list_tables,
     open_table,
 )
+from super_db.catalog.catalog import scan as _scan
 from super_db.catalog.schema import ColumnType, TableMeta
 from super_db.common.constants import DEFAULT_PAGE_SIZE
 from super_db.common.errors import StorageError
@@ -105,8 +106,6 @@ class StorageEngine:
 
     def scan(self, table: str) -> list[Row]:
         """Return all live records in the table's heap as a list[Row]."""
-        from super_db.catalog.catalog import scan as _scan
-
         return _scan(open_table(self._db_dir, table))
 
     def update(self, table: str, rid: RID, record: dict) -> RID:
