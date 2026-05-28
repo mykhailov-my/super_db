@@ -1,3 +1,4 @@
+import contextlib
 import json
 import os
 import re
@@ -153,10 +154,10 @@ def drop_table(db_dir: Path, name: str) -> None:
         raise ValueError(f"table {name!r} does not exist")
     cat["tables"] = [t for t in cat["tables"] if t["name"] != name]
     _save_catalog(db_dir, cat)
-    try:
-        (db_dir / f"{name}.tbl").unlink(missing_ok=True)
-    except OSError:
-        pass
+    # Remove the heap and any sibling B+Tree index for this table.
+    for suffix in (".tbl", ".idx"):
+        with contextlib.suppress(OSError):
+            (db_dir / f"{name}{suffix}").unlink(missing_ok=True)
 
 
 def insert(handle: TableHandle, record: dict) -> RID:

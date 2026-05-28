@@ -222,6 +222,10 @@ def encode_header(
     mv[0:end] = fixed
     col_bytes = col_name.encode("utf-8")
     col_len = len(col_bytes)
+    if col_len > 255:
+        raise StorageError(f"key column name too long: {col_len} bytes (max 255)")
+    if end + 1 + col_len > page_size:
+        raise StorageError(f"key column name does not fit in a {page_size}B header page")
     mv[end] = col_len
     end += 1
     mv[end : end + col_len] = col_bytes
@@ -277,7 +281,8 @@ def _encode_leaf_int(node: LeafNode, page_size: int) -> bytes:
 def _decode_leaf_int(data: bytes) -> LeafNode:
     """Decode a leaf node with INT keys from raw page bytes."""
     node_type, entry_count, next_leaf = LEAF_HDR.unpack(data[: LEAF_HDR.size])
-    assert node_type == NODE_TYPE_LEAF
+    if node_type != NODE_TYPE_LEAF:
+        raise StorageError(f"expected leaf node, got node_type {node_type}")
     entries = []
     pos = LEAF_HDR.size
     for _ in range(entry_count):
@@ -310,7 +315,8 @@ def _encode_leaf_text(node: LeafNode, cap: int, page_size: int) -> bytes:
 def _decode_leaf_text(data: bytes, cap: int) -> LeafNode:
     """Decode a leaf node with TEXT keys from raw page bytes."""
     node_type, entry_count, next_leaf = LEAF_HDR.unpack(data[: LEAF_HDR.size])
-    assert node_type == NODE_TYPE_LEAF
+    if node_type != NODE_TYPE_LEAF:
+        raise StorageError(f"expected leaf node, got node_type {node_type}")
     entries = []
     pos = LEAF_HDR.size
     key_slot = 2 + cap
@@ -360,7 +366,8 @@ def _encode_internal_int(node: InternalNode, page_size: int) -> bytes:
 def _decode_internal_int(data: bytes) -> InternalNode:
     """Decode an internal node with INT separator keys from raw page bytes."""
     node_type, key_count = INT_NODE_HDR.unpack(data[: INT_NODE_HDR.size])
-    assert node_type == NODE_TYPE_INTERNAL
+    if node_type != NODE_TYPE_INTERNAL:
+        raise StorageError(f"expected internal node, got node_type {node_type}")
     pos = INT_NODE_HDR.size
     children = []
     keys = []
@@ -399,7 +406,8 @@ def _encode_internal_text(node: InternalNode, cap: int, page_size: int) -> bytes
 def _decode_internal_text(data: bytes, cap: int) -> InternalNode:
     """Decode an internal node with TEXT separator keys from raw page bytes."""
     node_type, key_count = INT_NODE_HDR.unpack(data[: INT_NODE_HDR.size])
-    assert node_type == NODE_TYPE_INTERNAL
+    if node_type != NODE_TYPE_INTERNAL:
+        raise StorageError(f"expected internal node, got node_type {node_type}")
     pos = INT_NODE_HDR.size
     key_slot = 2 + cap
     children = []

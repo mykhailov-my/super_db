@@ -58,6 +58,17 @@ class BPlusTree:
 
     Use BPlusTree.create(...) to create a new index file.
     Use BPlusTree(path, page_size) to reopen an existing one.
+
+    Crash-durability scope (no WAL, by milestone design): a node split writes
+    the new right page first, then the modified left/parent pages, and a root
+    split rewrites the header page last as the commit point. A single insert is
+    therefore restart-safe across one fsync'd write. A split that spans multiple
+    pages is NOT crash-atomic — a crash partway through a multi-level split can
+    strand a newly allocated page that no parent yet points to (its keys become
+    unreachable). True multi-page split atomicity needs a write-ahead log, which
+    is explicitly out of scope for this milestone (matching the heap's accepted
+    fsync-per-op crash windows). The committed-on-disk tree is always a valid
+    B+Tree for every fully completed insert.
     """
 
     __slots__ = ("_path", "_page_size")
@@ -83,8 +94,15 @@ class BPlusTree:
 
         Writes page 0 = header (root_page_id=1) and page 1 = empty leaf.
         Performs a directory fsync after closing the file (Pitfall 7).
+
+        Fails with StorageError if the file already exists (O_EXCL) — recreating
+        over a populated index would strand its old data pages and corrupt page
+        allocation. Callers rebuilding an index must unlink the old file first.
         """
-        fd = os.open(str(idx_path), os.O_RDWR | os.O_CREAT, 0o644)
+        try:
+            fd = os.open(str(idx_path), os.O_RDWR | os.O_CREAT | os.O_EXCL, 0o644)
+        except FileExistsError as e:
+            raise StorageError(f"index file already exists: {idx_path}") from e
         try:
             # Page 0: header — root lives at page 1
             hdr_bytes = encode_header(key_type, text_key_cap, 1, col_name, page_size)

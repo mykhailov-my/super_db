@@ -118,7 +118,7 @@ def test_index_persists_after_restart(db_dir: Path) -> None:
 
     # Gather the .idx path and page_size (from the catalog, not from engine state)
     meta = engine.describe_table("t")
-    idx_path = db_dir / f"{meta.table_id}.idx"
+    idx_path = db_dir / f"{meta.name}.idx"
     page_size = meta.page_size
 
     # Act — construct a completely fresh BPlusTree (no shared state with engine._index)
@@ -152,3 +152,33 @@ def test_build_unknown_keycol_raises(db_dir: Path) -> None:
     # Act + Assert
     with pytest.raises(StorageError):
         engine.build_index("t", "missing")
+
+
+def test_build_index_rebuild_replaces_stale(db_dir: Path) -> None:
+    """A second build_index over the same table replaces the old .idx cleanly
+    (the index file is unlinked first; create() refuses to clobber otherwise)."""
+    init_db(db_dir)
+    engine = StorageEngine(db_dir)
+    engine.create_table("t", [("id", "INT", False)])
+    for i in range(5):
+        engine.insert("t", {"id": i})
+    engine.build_index("t", "id")
+
+    # Rebuilding must not raise and must still resolve every key.
+    engine.build_index("t", "id")
+    for i in range(5):
+        rid = engine._index.search(i)
+        assert engine.get("t", rid) == {"id": i}
+
+
+def test_index_negative_int_keys(db_dir: Path) -> None:
+    """INT keys sort by signed numeric order — negative keys resolve correctly."""
+    init_db(db_dir)
+    engine = StorageEngine(db_dir)
+    engine.create_table("t", [("id", "INT", False)])
+    keys = [-100, -1, 0, 1, 100, -50, 42]
+    rids = {k: engine.insert("t", {"id": k}) for k in keys}
+    engine.build_index("t", "id")
+
+    for k in keys:
+        assert engine._index.search(k) == rids[k]

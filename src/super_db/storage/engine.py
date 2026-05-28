@@ -136,16 +136,19 @@ class StorageEngine:
     def build_index(self, table: str, keycol: str) -> None:
         """Build a B+Tree over keycol for table (D-10). Scans the heap to populate;
         subsequent StorageEngine.insert calls maintain it. No update/delete maintenance
-        this phase. Index lives at db_dir/{table_id}.idx, a sibling of the .tbl heap.
+        this phase. Index lives at db_dir/{table}.idx, a sibling of the .tbl heap.
 
-        Raises StorageError if keycol is not a column of table.
+        Rebuilding replaces any existing index for the table. Raises StorageError if
+        keycol is not a column of table.
         """
         handle = open_table(self._db_dir, table)
         col = next((c for c in handle.meta.columns if c.name == keycol), None)
         if col is None:
             raise StorageError(f"column '{keycol}' not found in table '{table}'")
         key_type = KEY_TYPE_INT if col.col_type == ColumnType.INT else KEY_TYPE_TEXT
-        idx_path = self._db_dir / f"{handle.meta.table_id}.idx"
+        idx_path = self._db_dir / f"{handle.meta.name}.idx"
+        # Replace any stale index — create() refuses to clobber an existing file.
+        idx_path.unlink(missing_ok=True)
         tree = BPlusTree.create(idx_path, handle.meta.page_size, key_type, keycol)
         for row in self.scan(table):
             tree.insert(row.values[keycol], row.rid)
