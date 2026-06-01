@@ -4,7 +4,10 @@ import sys
 from loguru import logger
 
 from super_db import __version__
+from super_db.cli.commands.index import add_index_parser, run_index
 from super_db.cli.commands.init import add_init_parser, run_init
+from super_db.cli.commands.page import add_page_parser, run_page
+from super_db.cli.commands.row import add_row_parser, run_row
 from super_db.cli.commands.table import add_table_parser, run_table
 from super_db.common.errors import SuperDBError
 from super_db.common.log import setup_logging
@@ -26,6 +29,19 @@ def build_parser() -> argparse.ArgumentParser:
     table_parser = nouns.add_parser("table", help="table-level commands")
     table_verbs = table_parser.add_subparsers(dest="verb", title="table commands", metavar="<verb>")
     add_table_parser(table_verbs)
+
+    row_parser = nouns.add_parser("row", help="row-level data operations")
+    row_verbs = row_parser.add_subparsers(dest="verb", title="row commands", metavar="<verb>")
+    add_row_parser(row_verbs)
+
+    page_parser = nouns.add_parser("page", help="page visualization commands")
+    page_verbs = page_parser.add_subparsers(dest="verb", title="page commands", metavar="<verb>")
+    add_page_parser(page_verbs)
+
+    index_parser = nouns.add_parser("index", help="index visualization commands")
+    index_verbs = index_parser.add_subparsers(dest="verb", title="index commands", metavar="<verb>")
+    add_index_parser(index_verbs)
+
     return parser
 
 
@@ -47,6 +63,12 @@ def main() -> None:
             run_init(args, renderer)
         elif args.noun == "table":
             run_table(args, renderer)
+        elif args.noun == "row":
+            run_row(args, renderer)
+        elif args.noun == "page":
+            run_page(args, renderer)
+        elif args.noun == "index":
+            run_index(args, renderer)
         else:
             parser.print_help(sys.stderr)
             sys.exit(1)

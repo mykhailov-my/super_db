@@ -61,14 +61,10 @@ def run_table(args, renderer) -> None:
         if not metas:
             renderer.render_message("no tables")
         else:
-            renderer.render_message("\n".join(f"{m.name} (id {m.table_id})" for m in metas))
+            renderer.render_table_list([(m.name, str(m.table_id)) for m in metas])
     elif verb == "describe":
         meta = describe_table(_resolve_db(args), args.table)
-        lines = [f"table: {meta.name}  track={meta.storage_track.value}  page_size={meta.page_size}"]
-        for col in meta.columns:
-            null_str = "NULL" if col.nullable else "NOT NULL"
-            lines.append(f"  {col.name}: {col.col_type.value} {null_str}")
-        renderer.render_message("\n".join(lines))
+        renderer.render_schema(meta)
     elif verb == "drop":
         drop_table(_resolve_db(args), args.table)
         renderer.render_message(f"Dropped table {args.table!r}")
