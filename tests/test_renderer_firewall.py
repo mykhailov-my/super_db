@@ -5,9 +5,19 @@ from super_db.render.protocol import Renderer
 
 
 def test_rich_not_imported_outside_render():
-    src = Path(__file__).parent.parent / "src" / "super_db"
-    files = list(src.rglob("*.py"))
-    assert files, f"firewall scan found no files under {src}"
+    repo_root = Path(__file__).parent.parent
+    src = repo_root / "src" / "super_db"
+    scripts = repo_root / "scripts"
+
+    scan_roots = [src]
+    if scripts.exists():
+        scan_roots.append(scripts)
+
+    files: list[Path] = []
+    for root in scan_roots:
+        files.extend(root.rglob("*.py"))
+
+    assert files, f"firewall scan found no files under {scan_roots}"
     leaks = []
     for f in files:
         if "render" in f.parts:
