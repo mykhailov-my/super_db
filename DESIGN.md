@@ -118,7 +118,7 @@ space. The new RID is returned to the caller. The `row update` command prints
 
 ---
 
-## Slotted-Page Byte Layout
+## Slotted-Page Layout
 
 Every page is exactly `page_size` bytes. The layout within a page is:
 
