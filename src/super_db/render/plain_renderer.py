@@ -55,12 +55,13 @@ class PlainRenderer:
         print(f"Header\t[0, {header_bytes})\t{header_bytes}B\tpage_id, slot_count, free_start...")
         for slot_id, offset, length, is_live in slots:
             status = "live" if is_live else "dead"
+            notes = f"offset={offset} length={length}" if is_live else "TOMBSTONE"
             slot_start = header_bytes + slot_id * SLOT_ENTRY_SIZE
             print(
                 f"Slot {slot_id} ({status})\t"
                 f"[{slot_start}, {slot_start + SLOT_ENTRY_SIZE})\t"
                 f"6B\t"
-                f"offset={offset} length={length}"
+                f"{notes}"
             )
         print(
             f"Free space\t"

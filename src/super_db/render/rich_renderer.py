@@ -42,7 +42,7 @@ class RichRenderer:
         if not rows:
             self._console.print("no rows")
             return
-        tbl = Table(show_header=True, border_style=None, box=None)
+        tbl = Table(show_header=True, border_style=None, box=rich_box.SIMPLE_HEAD)
         tbl.add_column("RID", style="cyan")
         for col in meta.columns:
             tbl.add_column(col.name)
@@ -58,7 +58,7 @@ class RichRenderer:
         self._console.print(
             f"Table: {meta.name}  track={meta.storage_track.value}  page_size={meta.page_size}"
         )
-        tbl = Table(show_header=True, border_style=None, box=None)
+        tbl = Table(show_header=True, border_style=None, box=rich_box.SIMPLE_HEAD)
         tbl.add_column("Column", style="bold")
         tbl.add_column("Type", style="bold")
         tbl.add_column("Nullable", style="bold")
@@ -67,7 +67,7 @@ class RichRenderer:
         self._console.print(tbl)
 
     def render_table_list(self, entries: Sequence[tuple[str, str]]) -> None:
-        tbl = Table(show_header=True, border_style=None, box=None)
+        tbl = Table(show_header=True, border_style=None, box=rich_box.SIMPLE_HEAD)
         tbl.add_column("Name", style="bold")
         tbl.add_column("Table ID", style="bold")
         for name, table_id in entries:
