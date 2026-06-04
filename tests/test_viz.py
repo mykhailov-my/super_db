@@ -4,13 +4,11 @@ PlainRenderer: deterministic text assertions.
 RichRenderer: smoke-only (renders without raising).
 No golden ANSI string assertions on RichRenderer output.
 """
-from pathlib import Path
 
-import pytest
 
 from super_db.catalog.schema import Column, ColumnType, StorageTrack, TableMeta
 from super_db.render.plain_renderer import PlainRenderer
-
+from super_db.render.rich_renderer import RichRenderer
 
 # ---------------------------------------------------------------------------
 # Helper: build a minimal TableMeta without a real database
@@ -142,7 +140,6 @@ def test_render_btree_internal_plain(capsys) -> None:
 # ---------------------------------------------------------------------------
 
 def test_render_rows_rich_no_error() -> None:
-    from super_db.render.rich_renderer import RichRenderer
 
     meta = _make_meta()
     RichRenderer().render_rows(meta, [("0:0", {"id": 1, "name": "Alice"})])
@@ -150,14 +147,12 @@ def test_render_rows_rich_no_error() -> None:
 
 
 def test_render_schema_rich_no_error() -> None:
-    from super_db.render.rich_renderer import RichRenderer
 
     meta = _make_meta()
     RichRenderer().render_schema(meta)
 
 
 def test_render_page_rich_no_error() -> None:
-    from super_db.render.rich_renderer import RichRenderer
 
     RichRenderer().render_page(
         table_name="users",
@@ -172,7 +167,6 @@ def test_render_page_rich_no_error() -> None:
 
 
 def test_render_hexdump_rich_no_error() -> None:
-    from super_db.render.rich_renderer import RichRenderer
 
     raw = b"\x01\x00\x00\x00\x05hello"
     RichRenderer().render_hexdump(
@@ -184,7 +178,6 @@ def test_render_hexdump_rich_no_error() -> None:
 
 
 def test_render_btree_rich_no_error() -> None:
-    from super_db.render.rich_renderer import RichRenderer
 
     nodes = [{"type": "leaf", "keys": [1], "rids": ["0:0"], "next_leaf": None}]
     RichRenderer().render_btree("users", "id", nodes)

@@ -1,6 +1,5 @@
 import argparse
 import math
-import os
 from pathlib import Path
 
 from super_db.catalog.catalog import open_table
@@ -55,7 +54,9 @@ def _parse_rid(raw: str) -> RID:
         page_str, slot_str = raw.split(":")
         return RID(int(page_str), int(slot_str))
     except (ValueError, AttributeError):
-        raise ValueError(f"invalid rid format '{raw}': expected page:slot (e.g. 0:3)")
+        raise ValueError(
+            f"invalid rid format '{raw}': expected page:slot (e.g. 0:3)"
+        ) from None
 
 
 def _parse_values_spec(spec: str, meta: TableMeta) -> list:
@@ -76,7 +77,7 @@ def _parse_values_spec(spec: str, meta: TableMeta) -> list:
             except ValueError:
                 raise ValueError(
                     f"invalid value '{raw}' for column '{col.name}' (INT): expected an integer"
-                )
+                ) from None
         else:
             result.append(raw)
     return result

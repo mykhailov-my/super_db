@@ -30,7 +30,7 @@ def run_page(args, renderer) -> None:
         fd = os.open(str(handle.heap_path), os.O_RDONLY)
         try:
             page_count = os.fstat(fd).st_size // ps
-            if args.page >= page_count:
+            if args.page < 0 or args.page >= page_count:
                 raise ValueError(
                     f"page {args.page} not found in table '{args.table}'"
                     f" (table has {page_count} pages)"

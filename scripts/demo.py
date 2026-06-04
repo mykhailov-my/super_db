@@ -9,11 +9,12 @@ Usage:
 import argparse
 import math
 import os
+import sys
 from pathlib import Path
 
 from super_db.catalog.catalog import open_table
 from super_db.cli.commands.index import _dump_tree
-from super_db.common.errors import RecordNotFoundError
+from super_db.common.errors import RecordNotFoundError, SuperDBError
 from super_db.db import init_db
 from super_db.index.node_layout import decode_header
 from super_db.render.rich_renderer import RichRenderer
@@ -180,4 +181,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SuperDBError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)

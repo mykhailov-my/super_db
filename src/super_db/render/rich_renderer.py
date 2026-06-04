@@ -1,5 +1,6 @@
-from typing import Sequence
+from collections.abc import Sequence
 
+from rich import box as rich_box
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -7,8 +8,7 @@ from rich.text import Text
 from rich.tree import Tree
 
 from super_db.catalog.schema import TableMeta
-from super_db.storage.page_layout import HEADER_SIZE, SLOT_ENTRY_SIZE
-
+from super_db.storage.page_layout import SLOT_ENTRY_SIZE
 
 FIELD_COLORS = [
     "green",
@@ -85,8 +85,6 @@ class RichRenderer:
         free_space_start: int,
         free_space_end: int,
     ) -> None:
-        from rich import box as rich_box
-
         tbl = Table(show_header=True, box=rich_box.ROUNDED, border_style=None)
         tbl.add_column("Section")
         tbl.add_column("Byte Range")
