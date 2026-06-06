@@ -111,11 +111,13 @@ db-cli --db PATH page show --table users --page 0
 
 ### index
 
-| Verb   | Flags | Description |
-|--------|-------|-------------|
-| `show` | `--table NAME` | Render the B+Tree index as an indented tree |
+| Verb    | Flags | Description |
+|---------|-------|-------------|
+| `build` | `--table NAME --keycol COLUMN` | Build a B+Tree index over a key column |
+| `show`  | `--table NAME` | Render the B+Tree index as an indented tree |
 
 ```
+db-cli --db PATH index build --table users --keycol id
 db-cli --db PATH index show --table users
 ```
 

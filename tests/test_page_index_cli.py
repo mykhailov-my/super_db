@@ -58,3 +58,24 @@ def test_cli_index_show_no_index(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert "no index found" in result.stdout
     assert "Traceback" not in result.stderr
+
+
+def test_cli_index_build_then_show(tmp_path: Path) -> None:
+    # Arrange — table with several rows
+    db_dir = tmp_path / "mydb"
+    _run("db", "init", "--db", str(db_dir))
+    _run("table", "create", "--db", str(db_dir), "--table", "t", "--columns", "id:INT")
+    for i in range(5):
+        _run("row", "insert", "--db", str(db_dir), "--table", "t", "--values", str(i))
+
+    # Act — build the index, then show it
+    build = _run("index", "build", "--db", str(db_dir), "--table", "t", "--keycol", "id")
+    show = _run("index", "show", "--db", str(db_dir), "--table", "t")
+
+    # Assert — build confirms, show renders the tree (no "no index found")
+    assert build.returncode == 0
+    assert "built index" in build.stdout
+    assert show.returncode == 0
+    assert "no index found" not in show.stdout
+    assert "B+Tree" in show.stdout
+    assert "Traceback" not in show.stderr
