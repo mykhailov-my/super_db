@@ -288,3 +288,19 @@ def test_corrupt_catalog_bad_table_name_rejected(tmp_path: Path) -> None:
     (tmp_path / "catalog.json").write_text(json.dumps(cat))
     with pytest.raises(ValueError, match="invalid table name"):
         describe_table(tmp_path, "../evil")
+
+
+def test_create_table_failed_save_leaves_no_heap(db_dir: Path, monkeypatch) -> None:
+    """If catalog persistence fails, no orphan .tbl heap is left behind — the
+    catalog save is the commit point (heap is created only afterward)."""
+    from super_db.catalog import catalog as catalog_mod
+
+    init_db(db_dir)
+
+    def boom(*args, **kwargs):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(catalog_mod, "_save_catalog", boom)
+    with pytest.raises(OSError):
+        create_table(db_dir, "t", [("id", "INT", False)])
+    assert not (db_dir / "t.tbl").exists()

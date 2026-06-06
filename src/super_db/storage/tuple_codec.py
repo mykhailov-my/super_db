@@ -46,6 +46,8 @@ def encode_tuple(columns: list[Column], values: list) -> bytes:
     parts: list[bytes] = [bm.to_bytes(_bitmap_width(len(columns)), "little")]
     for col, v in zip(columns, values, strict=True):
         if v is None:
+            if not col.nullable:
+                raise StorageError(f"column {col.name!r} is NOT NULL but value is None")
             continue
         if col.col_type == ColumnType.INT:
             try:
@@ -53,6 +55,10 @@ def encode_tuple(columns: list[Column], values: list) -> bytes:
             except struct.error as exc:
                 raise StorageError(f"INT value {v} out of int32 range") from exc
         else:
+            if not isinstance(v, str):
+                raise StorageError(
+                    f"TEXT value for {col.name!r} must be str, got {type(v).__name__}"
+                )
             b = v.encode("utf-8")
             try:
                 parts.append(U16.pack(len(b)))

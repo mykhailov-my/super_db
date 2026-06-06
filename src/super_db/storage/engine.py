@@ -149,7 +149,11 @@ class StorageEngine:
         # Replace any stale index — create() refuses to clobber an existing file.
         idx_path.unlink(missing_ok=True)
         tree = BPlusTree.create(idx_path, handle.meta.page_size, key_type, keycol)
-        for row in self.scan(table):
-            tree.insert(row.values[keycol], row.rid)
+        try:
+            for row in self.scan(table):
+                tree.insert(row.values[keycol], row.rid)
+        except Exception:
+            idx_path.unlink(missing_ok=True)
+            raise
         self._index = tree
         self._index_keycol = keycol

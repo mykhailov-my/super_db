@@ -237,6 +237,8 @@ class BPlusTree:
         Note (D-10): delete/update do not maintain the index this phase.
         TODO(Phase8): update index on relocations caused by StorageEngine.update.
         """
+        if key is None:
+            raise StorageError("index key may not be NULL")
         try:
             fd = os.open(str(self._path), os.O_RDWR)
         except FileNotFoundError as exc:

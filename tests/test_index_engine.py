@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from super_db.common.errors import StorageError
+from super_db.common.errors import DuplicateKeyError, StorageError
 from super_db.db import init_db
 from super_db.index.bplustree import BPlusTree
 from super_db.storage.engine import StorageEngine
@@ -169,6 +169,35 @@ def test_build_index_rebuild_replaces_stale(db_dir: Path) -> None:
     for i in range(5):
         rid = engine._index.search(i)
         assert engine.get("t", rid) == {"id": i}
+
+
+def test_build_index_duplicate_key_leaves_no_idx(db_dir: Path) -> None:
+    """build_index over a column with duplicate keys raises DuplicateKeyError and
+    must not strand the freshly-created .idx on disk."""
+    init_db(db_dir)
+    engine = StorageEngine(db_dir)
+    engine.create_table("t", [("id", "INT", False)])
+    engine.insert("t", {"id": 5})
+    engine.insert("t", {"id": 5})
+
+    idx_path = db_dir / "t.idx"
+    with pytest.raises(DuplicateKeyError):
+        engine.build_index("t", "id")
+    assert not idx_path.exists()
+
+
+def test_build_index_null_key_leaves_no_idx(db_dir: Path) -> None:
+    """build_index over a column containing a NULL value raises StorageError with a
+    clear NULL message and must not strand the freshly-created .idx on disk."""
+    init_db(db_dir)
+    engine = StorageEngine(db_dir)
+    engine.create_table("t", [("id", "INT", True)])
+    engine.insert("t", {"id": None})
+
+    idx_path = db_dir / "t.idx"
+    with pytest.raises(StorageError, match="NULL"):
+        engine.build_index("t", "id")
+    assert not idx_path.exists()
 
 
 def test_index_negative_int_keys(db_dir: Path) -> None:

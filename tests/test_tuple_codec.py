@@ -6,8 +6,9 @@ from super_db.common.errors import StorageError
 from super_db.storage.tuple_codec import FieldSpan, decode_tuple, describe_tuple, encode_tuple
 
 # Two-column schema reused by the golden-byte tests (matches RESEARCH golden sequences).
+# Both columns are nullable so the NULL-bitmap cases below are valid records.
 SCHEMA = [
-    Column("id", ColumnType.INT, False),
+    Column("id", ColumnType.INT, True),
     Column("name", ColumnType.TEXT, True),
 ]
 
@@ -120,6 +121,25 @@ def test_mismatched_lengths_raises():
 def test_all_null_round_trip():
     vals = [None, None]
     assert decode_tuple(encode_tuple(SCHEMA, vals), SCHEMA) == vals
+
+
+def test_text_non_str_value_raises_storage_error():
+    # A TEXT column given a non-str value must raise StorageError, not a raw
+    # AttributeError from .encode, mirroring the INT-range guard.
+    schema = [Column("name", ColumnType.TEXT, True)]
+    with pytest.raises(StorageError, match="must be str"):
+        encode_tuple(schema, [123])
+
+
+def test_not_null_column_with_none_raises():
+    schema = [Column("id", ColumnType.INT, False)]
+    with pytest.raises(StorageError, match="NOT NULL"):
+        encode_tuple(schema, [None])
+
+
+def test_nullable_column_with_none_round_trips():
+    schema = [Column("name", ColumnType.TEXT, True)]
+    assert decode_tuple(encode_tuple(schema, [None]), schema) == [None]
 
 
 def test_invalid_utf8_text_raises_storage_error():

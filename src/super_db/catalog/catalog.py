@@ -11,6 +11,7 @@ from super_db.common.durability import write_json_atomic
 from super_db.common.errors import StorageError
 from super_db.storage.heap_file import HeapFile
 from super_db.storage.page import Page
+from super_db.storage.page_layout import HEADER_SIZE, SLOT_ENTRY_SIZE
 from super_db.storage.rid import RID
 from super_db.storage.row import Row
 from super_db.storage.tuple_codec import decode_tuple, encode_tuple
@@ -106,14 +107,18 @@ def create_table(
     page_size: int = DEFAULT_PAGE_SIZE,
 ) -> TableMeta:
     _validate_schema(name, columns)
+    if not isinstance(page_size, int) or isinstance(page_size, bool):
+        raise ValueError(f"page_size must be an int, got {type(page_size).__name__}")
+    if page_size <= HEADER_SIZE + SLOT_ENTRY_SIZE or page_size > 0xFFFF:
+        raise ValueError(
+            f"page_size {page_size} out of range "
+            f"(must be > {HEADER_SIZE + SLOT_ENTRY_SIZE} and <= {0xFFFF})"
+        )
     cat = _load_catalog(db_dir)
     if any(t["name"] == name for t in cat["tables"]):
         raise ValueError(f"table {name!r} already exists")
 
     table_id = cat["next_table_id"]
-    heap = db_dir / f"{name}.tbl"
-    heap.write_bytes(b"")  # create or truncate orphan
-
     cols = tuple(
         Column(col_name, ColumnType(col_type.upper()), nullable)
         for col_name, col_type, nullable in columns
@@ -129,6 +134,8 @@ def create_table(
     cat["tables"].append(_table_to_dict(meta))
     cat["next_table_id"] = table_id + 1
     _save_catalog(db_dir, cat)
+    heap = db_dir / f"{name}.tbl"
+    heap.write_bytes(b"")  # create empty heap file
     return meta
 
 

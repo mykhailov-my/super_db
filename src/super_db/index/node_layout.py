@@ -233,6 +233,12 @@ def encode_header(
     return bytes(buf)
 
 
+def _check_count(count: int, pos: int, entry_size: int, data_len: int) -> None:
+    """Reject an on-disk entry/key count that would read past the page (corruption guard)."""
+    if count < 0 or pos + count * entry_size > data_len:
+        raise StorageError(f"corrupt index node: claimed count {count} does not fit in page")
+
+
 def decode_header(data: bytes) -> Header:
     """Decode the index file header page.
 
@@ -247,7 +253,12 @@ def decode_header(data: bytes) -> Header:
     if fv != INDEX_FORMAT_VERSION:
         raise StorageError(f"unsupported index format version {fv}")
     col_len = data[IDX_HDR_FIXED.size]
-    col_name = data[IDX_HDR_FIXED.size + 1 : IDX_HDR_FIXED.size + 1 + col_len].decode("utf-8")
+    if IDX_HDR_FIXED.size + 1 + col_len > len(data):
+        raise StorageError("corrupt index header: column name length out of bounds")
+    try:
+        col_name = data[IDX_HDR_FIXED.size + 1 : IDX_HDR_FIXED.size + 1 + col_len].decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise StorageError("corrupt index header: column name is not valid UTF-8") from exc
     return Header(
         magic=magic,
         format_version=fv,
@@ -285,6 +296,7 @@ def _decode_leaf_int(data: bytes) -> LeafNode:
         raise StorageError(f"expected leaf node, got node_type {node_type}")
     entries = []
     pos = LEAF_HDR.size
+    _check_count(entry_count, pos, INT_LENTRY.size, len(data))
     for _ in range(entry_count):
         key_i, pid, sid = INT_LENTRY.unpack(data[pos : pos + INT_LENTRY.size])
         entries.append((INT_IKEY.pack(key_i), RID(pid, sid)))
@@ -321,6 +333,7 @@ def _decode_leaf_text(data: bytes, cap: int) -> LeafNode:
     pos = LEAF_HDR.size
     key_slot = 2 + cap
     entry_sz = key_slot + RID_PART.size
+    _check_count(entry_count, pos, entry_sz, len(data))
     for _ in range(entry_count):
         key_bytes = bytes(data[pos : pos + key_slot])
         pid, sid = RID_PART.unpack(data[pos + key_slot : pos + entry_sz])
@@ -369,6 +382,8 @@ def _decode_internal_int(data: bytes) -> InternalNode:
     if node_type != NODE_TYPE_INTERNAL:
         raise StorageError(f"expected internal node, got node_type {node_type}")
     pos = INT_NODE_HDR.size
+    # key_count keys + (key_count + 1) children interleaved; guard the whole span.
+    _check_count(key_count, pos + INT_ICHILD.size, INT_ICHILD.size + INT_IKEY.size, len(data))
     children = []
     keys = []
     for i in range(key_count + 1):
@@ -410,6 +425,8 @@ def _decode_internal_text(data: bytes, cap: int) -> InternalNode:
         raise StorageError(f"expected internal node, got node_type {node_type}")
     pos = INT_NODE_HDR.size
     key_slot = 2 + cap
+    # key_count keys + (key_count + 1) children interleaved; guard the whole span.
+    _check_count(key_count, pos + INT_ICHILD.size, INT_ICHILD.size + key_slot, len(data))
     children = []
     keys = []
     for i in range(key_count + 1):

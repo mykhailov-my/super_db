@@ -28,6 +28,16 @@ class HeapFile:
         self._path = heap_path
         self._page_size = page_size
 
+    def _page_count(self, fd: int) -> int:
+        """Number of whole pages in the heap, rejecting a torn (partial) trailing page."""
+        ps = self._page_size
+        size = os.fstat(fd).st_size
+        if size % ps != 0:
+            raise StorageError(
+                f"heap file size {size} is not a multiple of page_size {ps}"
+            )
+        return size // ps
+
     def insert(self, record: bytes) -> RID:
         """Append record to the heap, allocating a new page if needed. Returns RID.
 
@@ -43,7 +53,7 @@ class HeapFile:
         except FileNotFoundError as e:
             raise StorageError(f"heap file not found: {self._path}") from e
         try:
-            page_count = os.fstat(fd).st_size // ps
+            page_count = self._page_count(fd)
             if page_count == 0:
                 page_id = 0
                 page = Page.new(ps)
@@ -67,7 +77,7 @@ class HeapFile:
         or a tombstoned slot — the single not-found contract shared by get/update/delete.
         """
         ps = self._page_size
-        page_count = os.fstat(fd).st_size // ps
+        page_count = self._page_count(fd)
         if rid.page_id >= page_count:
             raise RecordNotFoundError(
                 f"page_id {rid.page_id} out of range (page_count={page_count})"
@@ -89,7 +99,10 @@ class HeapFile:
         Raises RecordNotFoundError for out-of-range page_id, out-of-range slot_id,
         and tombstoned slots.
         """
-        fd = os.open(str(self._path), os.O_RDONLY)
+        try:
+            fd = os.open(str(self._path), os.O_RDONLY)
+        except FileNotFoundError as e:
+            raise StorageError(f"heap file not found: {self._path}") from e
         try:
             return self._read_live_page(fd, rid).get_tuple(rid.slot_id)
         finally:
