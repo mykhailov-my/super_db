@@ -3,12 +3,11 @@ import os
 
 import pytest
 
-from super_db.common.constants import DEFAULT_PAGE_SIZE
-from super_db.common.errors import PageFullError, RecordNotFoundError
-from super_db.storage.heap_file import HeapFile
-from super_db.storage.page import Page
-from super_db.storage.page_layout import HEADER_SIZE, SLOT_ENTRY_SIZE
-from super_db.storage.rid import RID
+from superdb.constants import DEFAULT_PAGE_SIZE
+from superdb.errors import PageFullError, RecordNotFoundError
+from superdb.heap_file import HeapFile
+from superdb.page import Page
+from superdb.rid import RID
 
 
 def _new_heap(tmp_path, page_size=DEFAULT_PAGE_SIZE):

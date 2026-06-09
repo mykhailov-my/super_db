@@ -1,10 +1,10 @@
 """Tests for storage/page.py — slotted-page byte layout (PHYS-01, PHYS-03, PHYS-04)."""
 import pytest
 
-from super_db.common.constants import FORMAT_VERSION
-from super_db.common.errors import PageFullError, StorageError
-from super_db.storage.page import Page
-from super_db.storage.page_layout import HEADER_SIZE, PAGE_HDR, SLOT, SLOT_ENTRY_SIZE
+from superdb.constants import FORMAT_VERSION
+from superdb.errors import PageFullError, StorageError
+from superdb.page import Page
+from superdb.page_layout import HEADER_SIZE, PAGE_HDR, SLOT, SLOT_ENTRY_SIZE
 
 
 def test_header_roundtrip():
@@ -78,7 +78,7 @@ def test_nondefault_page_size():
 
 
 def test_page_size_not_in_header():
-    # page_size must not appear as a distinct header field (D-03).
+    # page_size must not appear as a distinct header field.
     # A fresh 8192-byte page: free_end == 8192 (which is expected), but the
     # other three fields (format_version, slot_count, free_start) must not equal 8192.
     p = Page.new(8192)

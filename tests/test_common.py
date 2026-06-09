@@ -1,16 +1,13 @@
 """Tests for super_db.common: constants, errors, durability stub, and logging."""
-import os
-import pathlib
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # constants
 # ---------------------------------------------------------------------------
 
 def test_constants_values():
-    from super_db.common.constants import MAGIC, FORMAT_VERSION, DEFAULT_PAGE_SIZE, META_FILE
+    from superdb.constants import DEFAULT_PAGE_SIZE, FORMAT_VERSION, MAGIC, META_FILE
 
     assert MAGIC == "SUPERDB"
     assert FORMAT_VERSION == 1
@@ -23,7 +20,7 @@ def test_constants_values():
 # ---------------------------------------------------------------------------
 
 def test_error_hierarchy():
-    from super_db.common.errors import (
+    from superdb.errors import (
         InitError,
         OpenError,
         PageFullError,
@@ -39,14 +36,14 @@ def test_error_hierarchy():
 
 
 def test_init_error_is_catchable_as_superdb_error():
-    from super_db.common.errors import SuperDBError, InitError
+    from superdb.errors import InitError, SuperDBError
 
     with pytest.raises(SuperDBError):
         raise InitError("test")
 
 
 def test_open_error_is_catchable_as_superdb_error():
-    from super_db.common.errors import SuperDBError, OpenError
+    from superdb.errors import OpenError, SuperDBError
 
     with pytest.raises(SuperDBError):
         raise OpenError("test")
@@ -57,7 +54,7 @@ def test_open_error_is_catchable_as_superdb_error():
 # ---------------------------------------------------------------------------
 
 def test_write_file_atomic_writes_bytes(tmp_path):
-    from super_db.common.durability import write_file_atomic
+    from superdb.durability import write_file_atomic
 
     target = tmp_path / "blob"
     write_file_atomic(target, b"hello")
@@ -67,7 +64,7 @@ def test_write_file_atomic_writes_bytes(tmp_path):
 def test_write_json_atomic_writes_indented_json(tmp_path):
     import json
 
-    from super_db.common.durability import write_json_atomic
+    from superdb.durability import write_json_atomic
 
     target = tmp_path / "obj.json"
     write_json_atomic(target, {"a": 1})
@@ -82,7 +79,8 @@ def test_setup_logging_debug_flag(monkeypatch):
     """--debug sets level DEBUG."""
     monkeypatch.delenv("LOG_LEVEL", raising=False)
     from loguru import logger
-    from super_db.common.log import setup_logging
+
+    from superdb.log import setup_logging
 
     records = []
     setup_logging(debug=True)
@@ -99,7 +97,8 @@ def test_setup_logging_verbose_flag(monkeypatch, capsys):
     """--verbose sets level INFO; DEBUG is suppressed on the stderr sink."""
     monkeypatch.delenv("LOG_LEVEL", raising=False)
     from loguru import logger
-    from super_db.common.log import setup_logging
+
+    from superdb.log import setup_logging
 
     setup_logging(debug=False, verbose=True)
     try:
@@ -116,7 +115,8 @@ def test_setup_logging_log_level_env(monkeypatch, capsys):
     """LOG_LEVEL env var sets the level when no flags given."""
     monkeypatch.setenv("LOG_LEVEL", "ERROR")
     from loguru import logger
-    from super_db.common.log import setup_logging
+
+    from superdb.log import setup_logging
 
     setup_logging(debug=False, verbose=False)
     try:
@@ -133,7 +133,8 @@ def test_setup_logging_default_is_warning(monkeypatch):
     """No flags, no LOG_LEVEL → WARNING level (quiet)."""
     monkeypatch.delenv("LOG_LEVEL", raising=False)
     from loguru import logger
-    from super_db.common.log import setup_logging
+
+    from superdb.log import setup_logging
 
     setup_logging(debug=False, verbose=False)
     # Just verify setup completes without error; level is WARNING

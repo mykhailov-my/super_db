@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from super_db.common.errors import InitError, OpenError
-from super_db.db import init_db, open_db
+from superdb.database import init_db, open_db
+from superdb.errors import InitError, OpenError
 
 
 def test_init_creates_meta(db_dir: Path) -> None:

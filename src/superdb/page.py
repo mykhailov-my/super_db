@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from ..common.constants import FORMAT_VERSION
-from ..common.errors import PageFullError, StorageError
-from .page_layout import HEADER_SIZE, PAGE_HDR, SLOT, SLOT_ENTRY_SIZE, SLOT_FLAG_LIVE
+from superdb.constants import FORMAT_VERSION
+from superdb.errors import PageFullError, StorageError
+from superdb.page_layout import HEADER_SIZE, PAGE_HDR, SLOT, SLOT_ENTRY_SIZE, SLOT_FLAG_LIVE
 
 
 class Page:
     """Fixed-size in-memory slotted-page buffer.
 
     Layout: 8-byte header | slot directory (grows up) | free space | tuples (grows down)
-    page_size is NOT stored in the header (D-03); the caller always supplies it.
+    page_size is NOT stored in the header; the caller always supplies it.
     """
 
     def __init__(self, buf: bytearray, page_size: int) -> None:
@@ -59,26 +59,31 @@ class Page:
     def free_space(self) -> int:
         return self.free_end - self.free_start
 
-    def can_fit(self, t: int) -> bool:
-        return (self.free_end - self.free_start) >= t + SLOT_ENTRY_SIZE
+    def can_fit(self, tuple_len: int) -> bool:
+        return (self.free_end - self.free_start) >= tuple_len + SLOT_ENTRY_SIZE
 
     def insert_tuple(self, record: bytes) -> int:
-        t = len(record)
-        if not self.can_fit(t):
-            raise PageFullError(f"record {t}B exceeds max for page_size {self.page_size}")
+        tuple_len = len(record)
+        if not self.can_fit(tuple_len):
+            raise PageFullError(f"record {tuple_len}B exceeds max for page_size {self.page_size}")
         mv = memoryview(self._buf)
-        fv, sc, fs, fe = self._header()
-        fe -= t
-        mv[fe:fe + t] = record
-        mv[fs:fs + SLOT_ENTRY_SIZE] = SLOT.pack(fe, t, SLOT_FLAG_LIVE)
-        mv[0:HEADER_SIZE] = PAGE_HDR.pack(fv, sc + 1, fs + SLOT_ENTRY_SIZE, fe)
-        return sc
+        format_version, slot_count, free_start, free_end = self._header()
+        free_end -= tuple_len
+        mv[free_end:free_end + tuple_len] = record
+        mv[free_start:free_start + SLOT_ENTRY_SIZE] = SLOT.pack(free_end, tuple_len, SLOT_FLAG_LIVE)
+        mv[0:HEADER_SIZE] = PAGE_HDR.pack(
+            format_version, slot_count + 1, free_start + SLOT_ENTRY_SIZE, free_end
+        )
+        return slot_count
 
-    def _slot(self, slot_id: int) -> tuple[int, int, int]:
+    def slot(self, slot_id: int) -> tuple[int, int, int]:
+        """Return the slot directory entry as (offset, length, flags)."""
         if not (0 <= slot_id < self.slot_count):
             raise StorageError(f"slot_id {slot_id} out of range (slot_count={self.slot_count})")
         base = HEADER_SIZE + slot_id * SLOT_ENTRY_SIZE
         return SLOT.unpack(self._buf[base:base + SLOT_ENTRY_SIZE])
+
+    _slot = slot
 
     def get_tuple(self, slot_id: int) -> bytes:
         off, ln, _fl = self._slot(slot_id)

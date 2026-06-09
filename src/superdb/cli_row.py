@@ -1,13 +1,13 @@
 import argparse
 import math
-from pathlib import Path
 
-from super_db.catalog.catalog import open_table
-from super_db.catalog.schema import ColumnType, TableMeta
-from super_db.storage.engine import StorageEngine
-from super_db.storage.heap_file import HeapFile
-from super_db.storage.rid import RID
-from super_db.storage.tuple_codec import describe_tuple
+from superdb.catalog import open_table
+from superdb.cli_common import resolve_db_dir as _resolve_db
+from superdb.engine import StorageEngine
+from superdb.heap_file import HeapFile
+from superdb.rid import RID
+from superdb.schema import ColumnType, TableMeta
+from superdb.tuple_codec import describe_tuple
 
 
 def add_row_parser(verbs) -> None:
@@ -40,13 +40,6 @@ def add_row_parser(verbs) -> None:
     hexdump.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
     hexdump.add_argument("--table", metavar="NAME", required=True)
     hexdump.add_argument("--rid", metavar="PAGE:SLOT", required=True)
-
-
-def _resolve_db(args) -> Path:
-    db = getattr(args, "db", None)
-    if db is None:
-        raise ValueError("missing --db PATH (the database directory)")
-    return Path(db).resolve()
 
 
 def _parse_rid(raw: str) -> RID:
@@ -92,15 +85,14 @@ def run_row(args, renderer) -> None:
         values = _parse_values_spec(args.values, meta)
         record = {c.name: v for c, v in zip(meta.columns, values, strict=True)}
         rid = engine.insert(args.table, record)
-        renderer.render_message(f"inserted rid={rid.page_id}:{rid.slot_id}")
+        renderer.render_message(f"inserted rid={rid}")
     elif verb == "get":
         db_dir = _resolve_db(args)
         rid = _parse_rid(args.rid)
         engine = StorageEngine(db_dir)
         meta = engine.describe_table(args.table)
         record = engine.get(args.table, rid)
-        rid_str = f"{rid.page_id}:{rid.slot_id}"
-        renderer.render_rows(meta, [(rid_str, record)])
+        renderer.render_rows(meta, [(str(rid), record)])
     elif verb == "scan":
         db_dir = _resolve_db(args)
         engine = StorageEngine(db_dir)
@@ -111,7 +103,7 @@ def run_row(args, renderer) -> None:
         else:
             renderer.render_rows(
                 meta,
-                [(f"{r.rid.page_id}:{r.rid.slot_id}", r.values) for r in rows],
+                [(str(r.rid), r.values) for r in rows],
             )
     elif verb == "update":
         db_dir = _resolve_db(args)
@@ -122,15 +114,15 @@ def run_row(args, renderer) -> None:
         record = {c.name: v for c, v in zip(meta.columns, values, strict=True)}
         new_rid = engine.update(args.table, rid, record)
         if new_rid == rid:
-            renderer.render_message(f"updated rid={new_rid.page_id}:{new_rid.slot_id}")
+            renderer.render_message(f"updated rid={new_rid}")
         else:
-            renderer.render_message(f"updated new_rid={new_rid.page_id}:{new_rid.slot_id}")
+            renderer.render_message(f"updated new_rid={new_rid}")
     elif verb == "delete":
         db_dir = _resolve_db(args)
         rid = _parse_rid(args.rid)
         engine = StorageEngine(db_dir)
         engine.delete(args.table, rid)
-        renderer.render_message(f"deleted rid={rid.page_id}:{rid.slot_id}")
+        renderer.render_message(f"deleted rid={rid}")
     elif verb == "hexdump":
         db_dir = _resolve_db(args)
         rid = _parse_rid(args.rid)
@@ -144,7 +136,7 @@ def run_row(args, renderer) -> None:
             for s in spans
         ]
         renderer.render_hexdump(
-            f"{rid.page_id}:{rid.slot_id}",
+            str(rid),
             raw,
             field_spans,
             null_bitmap_span,

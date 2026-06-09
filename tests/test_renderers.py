@@ -1,8 +1,7 @@
 """Tests for renderer Protocol, PlainRenderer, and RichRenderer."""
-import pytest
 
-from super_db.render.plain_renderer import PlainRenderer
-from super_db.render.protocol import Renderer
+from superdb.plain_renderer import PlainRenderer
+from superdb.renderer import Renderer
 
 
 def test_plain_renderer_message_to_stdout(capsys):
@@ -26,7 +25,7 @@ def test_plain_renderer_satisfies_protocol():
 
 
 def test_rich_renderer_message_to_stdout(capsys):
-    from super_db.render.rich_renderer import RichRenderer
+    from superdb.rich_renderer import RichRenderer
 
     RichRenderer().render_message("hi")
     out, err = capsys.readouterr()

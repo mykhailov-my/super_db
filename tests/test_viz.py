@@ -6,9 +6,9 @@ No golden ANSI string assertions on RichRenderer output.
 """
 
 
-from super_db.catalog.schema import Column, ColumnType, StorageTrack, TableMeta
-from super_db.render.plain_renderer import PlainRenderer
-from super_db.render.rich_renderer import RichRenderer
+from superdb.plain_renderer import PlainRenderer
+from superdb.rich_renderer import RichRenderer
+from superdb.schema import Column, ColumnType, StorageTrack, TableMeta
 
 # ---------------------------------------------------------------------------
 # Helper: build a minimal TableMeta without a real database

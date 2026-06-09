@@ -1,12 +1,12 @@
-"""Tests for storage/engine.py — StorageEngine dict roundtrip + restart durability (WRITE-03, WRITE-04)."""
+"""Tests for engine.py — StorageEngine dict roundtrip + restart durability (WRITE-03, WRITE-04)."""
 from pathlib import Path
 
 import pytest
 
-from super_db.common.errors import RecordNotFoundError, StorageError
-from super_db.db import init_db
-from super_db.storage.engine import StorageEngine
-from super_db.storage.rid import RID
+from superdb.database import init_db
+from superdb.engine import StorageEngine
+from superdb.errors import RecordNotFoundError, StorageError
+from superdb.rid import RID
 
 
 def test_engine_insert_get_roundtrip(db_dir: Path) -> None:

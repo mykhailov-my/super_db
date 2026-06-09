@@ -1,9 +1,19 @@
+import contextlib
 import json
 import os
 import tempfile
 from pathlib import Path
 
-from super_db.common.errors import StorageError
+from superdb.errors import StorageError
+
+
+def fsync_dir(path: Path) -> None:
+    """fsync a directory so a newly created or renamed entry reaches stable storage."""
+    dfd = os.open(str(path), os.O_RDONLY)
+    try:
+        os.fsync(dfd)
+    finally:
+        os.close(dfd)
 
 
 def write_file_atomic(path: Path, data: bytes) -> None:
@@ -24,16 +34,10 @@ def write_file_atomic(path: Path, data: bytes) -> None:
             os.close(fd)
         os.replace(tmp, path)
     except BaseException:
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(tmp)
-        except OSError:
-            pass
         raise
-    dfd = os.open(str(parent), os.O_RDONLY)
-    try:
-        os.fsync(dfd)
-    finally:
-        os.close(dfd)
+    fsync_dir(parent)
 
 
 def write_page(fd: int, page_id: int, page_bytes: bytes, page_size: int) -> None:

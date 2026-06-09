@@ -2,19 +2,19 @@
 
 Mirrors heap_file.py:
   - open-per-op: each public method opens its own fd, closes in finally
-  - __slots__: only _path and _page_size (no cached root_page_id — Pitfall 3)
-  - all node writes go through write_page from common/durability.py
-  - directory fsync on first .idx create (Pitfall 7)
+  - __slots__: only _path and _page_size (no cached root_page_id)
+  - all node writes go through write_page from durability.py
+  - directory fsync on first .idx create
 
-Split rules (D-07, Pitfall 9):
+Split rules:
   Leaf split  : copy-up   — separator = first key of right leaf; key STAYS in right leaf
   Internal split: push-up — median key removed from both children, sent up to parent
 
-Durability commit point (D-04, Pitfall 2):
+Durability commit point:
   On root split, the header page (page 0) is rewritten LAST as the commit point.
   A crash before that rewrite leaves the prior valid root intact.
 
-Note (D-10): delete/update do not maintain the index this phase.
+Note: delete/update do not maintain the index this phase.
 Phase 8 should add index maintenance to StorageEngine.update/delete.
 """
 from __future__ import annotations
@@ -22,14 +22,12 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from ..common.durability import write_page
-from ..common.errors import DuplicateKeyError, IndexKeyNotFoundError, StorageError
-from ..storage.rid import RID
-from .node_layout import (
+from superdb.durability import fsync_dir, write_page
+from superdb.errors import DuplicateKeyError, IndexKeyNotFoundError, StorageError
+from superdb.node_layout import (
+    KEY_TYPE_INT,
     NULL_PAGE_ID,
     TEXT_KEY_CAP_DEFAULT,
-    KEY_TYPE_INT,
-    KEY_TYPE_TEXT,
     Header,
     InternalNode,
     LeafNode,
@@ -47,6 +45,7 @@ from .node_layout import (
     text_internal_max_keys,
     text_leaf_max,
 )
+from superdb.rid import RID
 
 
 class BPlusTree:
@@ -89,11 +88,11 @@ class BPlusTree:
         key_type: int,
         col_name: str,
         text_key_cap: int = TEXT_KEY_CAP_DEFAULT,
-    ) -> "BPlusTree":
+    ) -> BPlusTree:
         """Create a new index file and return a BPlusTree pointing at it.
 
         Writes page 0 = header (root_page_id=1) and page 1 = empty leaf.
-        Performs a directory fsync after closing the file (Pitfall 7).
+        Performs a directory fsync after closing the file.
 
         Fails with StorageError if the file already exists (O_EXCL) — recreating
         over a populated index would strand its old data pages and corrupt page
@@ -114,13 +113,8 @@ class BPlusTree:
         finally:
             os.close(fd)
 
-        # Directory fsync — makes the new directory entry durable (Pitfall 1/7)
-        parent = idx_path.parent
-        dfd = os.open(str(parent), os.O_RDONLY)
-        try:
-            os.fsync(dfd)
-        finally:
-            os.close(dfd)
+        # Directory fsync — makes the new directory entry durable
+        fsync_dir(idx_path.parent)
 
         return cls(idx_path, page_size)
 
@@ -131,21 +125,23 @@ class BPlusTree:
     def _read_header(self, fd: int) -> Header:
         """Read and validate the header page. Returns Header."""
         raw = os.pread(fd, self._page_size, 0)
-        return decode_header(raw)  # validates magic + version (Pitfall 8)
+        return decode_header(raw)  # validates magic + version
 
     def _read_node(self, fd: int, page_id: int, key_type: int, cap: int) -> LeafNode | InternalNode:
         """Read and decode a node page."""
         raw = os.pread(fd, self._page_size, page_id * self._page_size)
         return decode_node(raw, key_type, cap)
 
-    def _write_node(self, fd: int, page_id: int, node: LeafNode | InternalNode, key_type: int, cap: int) -> None:
+    def _write_node(
+        self, fd: int, page_id: int, node: LeafNode | InternalNode, key_type: int, cap: int
+    ) -> None:
         """Encode and durably write a node page via write_page."""
-        ps = self._page_size
+        page_size = self._page_size
         if isinstance(node, LeafNode):
-            page_bytes = encode_leaf(node, key_type, cap, ps)
+            page_bytes = encode_leaf(node, key_type, cap, page_size)
         else:
-            page_bytes = encode_internal(node, key_type, cap, ps)
-        write_page(fd, page_id, page_bytes, ps)
+            page_bytes = encode_internal(node, key_type, cap, page_size)
+        write_page(fd, page_id, page_bytes, page_size)
 
     def _alloc_page(self, fd: int) -> int:
         """Return the next available page_id (current filesize // page_size = append)."""
@@ -196,7 +192,9 @@ class BPlusTree:
         try:
             hdr = self._read_header(fd)
             encoded = self._encode_key(key, hdr.key_type, hdr.text_key_cap)
-            return self._search_recursive(fd, encoded, hdr.root_page_id, hdr.key_type, hdr.text_key_cap)
+            return self._search_recursive(
+                fd, encoded, hdr.root_page_id, hdr.key_type, hdr.text_key_cap
+            )
         finally:
             os.close(fd)
 
@@ -210,7 +208,7 @@ class BPlusTree:
     ) -> RID:
         """Recursively descend to the leaf holding encoded_key and return its RID.
 
-        Leaf and internal node descent are SEPARATE branches (D-07).
+        Leaf and internal node descent are SEPARATE branches.
         """
         node = self._read_node(fd, page_id, key_type, cap)
         if isinstance(node, LeafNode):
@@ -232,9 +230,9 @@ class BPlusTree:
 
         Raises DuplicateKeyError if key already exists.
         Raises StorageError if the index file does not exist.
-        On root split, the header page is rewritten LAST as the commit point (D-04).
+        On root split, the header page is rewritten LAST as the commit point.
 
-        Note (D-10): delete/update do not maintain the index this phase.
+        Note: delete/update do not maintain the index this phase.
         TODO(Phase8): update index on relocations caused by StorageEngine.update.
         """
         if key is None:
@@ -255,8 +253,10 @@ class BPlusTree:
                 new_root_id = self._alloc_page(fd)
                 new_root = InternalNode(keys=(sep,), children=(hdr.root_page_id, right_pid))
                 self._write_node(fd, new_root_id, new_root, key_type, cap)
-                # Rewrite header with new root_page_id — THIS IS THE COMMIT POINT (D-04, Pitfall 2)
-                new_hdr_bytes = encode_header(key_type, cap, new_root_id, hdr.col_name, self._page_size)
+                # Rewrite header with new root_page_id — this is the commit point
+                new_hdr_bytes = encode_header(
+                    key_type, cap, new_root_id, hdr.col_name, self._page_size
+                )
                 write_page(fd, 0, new_hdr_bytes, self._page_size)
         finally:
             os.close(fd)
@@ -283,7 +283,9 @@ class BPlusTree:
             if self._compare(encoded_key, k, key_type) < 0:
                 child_idx = i
                 break
-        result = self._insert_recursive(fd, encoded_key, rid, node.children[child_idx], key_type, cap)
+        result = self._insert_recursive(
+            fd, encoded_key, rid, node.children[child_idx], key_type, cap
+        )
         if result is None:
             return None
         sep, right_pid = result
@@ -299,9 +301,9 @@ class BPlusTree:
         key_type: int,
         cap: int,
     ) -> tuple[bytes, int] | None:
-        """Insert encoded_key+rid into a leaf node using copy-up split rule (D-07).
+        """Insert encoded_key+rid into a leaf node using copy-up split rule.
 
-        Duplicate key raises DuplicateKeyError (D-08).
+        Duplicate key raises DuplicateKeyError.
         Returns (separator_key, right_page_id) on split, else None.
         Separator = first key of the right leaf; key STAYS in right leaf (copy-up).
         """
@@ -328,7 +330,7 @@ class BPlusTree:
             self._write_node(fd, page_id, updated, key_type, cap)
             return None
 
-        # Leaf split (copy-up rule, D-07):
+        # Leaf split (copy-up rule):
         # mid = split point; separator = entries[mid].key (STAYS in right leaf)
         mid = len(entries) // 2
         right_pid = self._alloc_page(fd)
@@ -354,7 +356,7 @@ class BPlusTree:
         key_type: int,
         cap: int,
     ) -> tuple[bytes, int] | None:
-        """Insert sep+right_pid into an internal node using push-up split rule (D-07).
+        """Insert sep+right_pid into an internal node using push-up split rule.
 
         Returns (median_key, right_page_id) on split, else None.
         Median is REMOVED from both children (push-up — not copy-up).
@@ -375,7 +377,7 @@ class BPlusTree:
             self._write_node(fd, page_id, updated, key_type, cap)
             return None
 
-        # Internal split (push-up rule, D-07):
+        # Internal split (push-up rule):
         # mid = median index; median is PUSHED UP and removed from both children
         mid = len(keys) // 2
         median = keys[mid]

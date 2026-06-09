@@ -1,12 +1,15 @@
 from pathlib import Path
 
-from super_db.render.plain_renderer import PlainRenderer
-from super_db.render.protocol import Renderer
+from superdb.plain_renderer import PlainRenderer
+from superdb.renderer import Renderer
+
+# The only module permitted to import rich — the renderer firewall seam.
+RICH_ALLOWED = {"rich_renderer.py"}
 
 
 def test_rich_not_imported_outside_render():
     repo_root = Path(__file__).parent.parent
-    src = repo_root / "src" / "super_db"
+    src = repo_root / "src" / "superdb"
     scripts = repo_root / "scripts"
 
     scan_roots = [src]
@@ -20,13 +23,13 @@ def test_rich_not_imported_outside_render():
     assert files, f"firewall scan found no files under {scan_roots}"
     leaks = []
     for f in files:
-        if "render" in f.parts:
+        if f.name in RICH_ALLOWED:
             continue
         for line in f.read_text().splitlines():
             stripped = line.strip()
             if stripped.startswith(("from rich", "import rich")):
                 leaks.append(f"{f}: {stripped}")
-    assert not leaks, "rich imported outside render/:\n" + "\n".join(leaks)
+    assert not leaks, "rich imported outside rich_renderer.py:\n" + "\n".join(leaks)
 
 
 def test_plain_renderer_satisfies_protocol():

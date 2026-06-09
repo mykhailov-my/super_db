@@ -1,12 +1,12 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from loguru import logger
 
-from super_db.common.constants import DEFAULT_PAGE_SIZE, FORMAT_VERSION, MAGIC, META_FILE
-from super_db.common.durability import write_json_atomic
-from super_db.common.errors import InitError, OpenError
+from superdb.constants import DEFAULT_PAGE_SIZE, FORMAT_VERSION, MAGIC, META_FILE
+from superdb.durability import write_json_atomic
+from superdb.errors import InitError, OpenError
 
 
 def _try_load_meta(db_dir: Path) -> dict | None:
@@ -23,7 +23,7 @@ def _write_meta(db_dir: Path) -> None:
     meta = {
         "magic": MAGIC,
         "format_version": FORMAT_VERSION,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "default_page_size": DEFAULT_PAGE_SIZE,
     }
     write_json_atomic(db_dir / META_FILE, meta)
@@ -58,5 +58,9 @@ def open_db(db_dir: Path) -> dict:
         raise OpenError(f"{db_dir}: not a super_db database (bad magic)")
     if meta.get("format_version") != FORMAT_VERSION:
         raise OpenError(f"{db_dir}: incompatible format version {meta.get('format_version')}")
-    logger.debug("open_db: opened path={path} format_version={v}", path=db_dir, v=meta["format_version"])
+    logger.debug(
+        "open_db: opened path={path} format_version={v}",
+        path=db_dir,
+        v=meta["format_version"],
+    )
     return meta

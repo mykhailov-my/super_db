@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from super_db.catalog.catalog import create_table, insert, open_table, scan
-from super_db.common.errors import StorageError
-from super_db.db import init_db
-from super_db.storage.page import Page
+from superdb.catalog import create_table, insert, open_table, scan
+from superdb.database import init_db
+from superdb.errors import StorageError
+from superdb.page import Page
 
 
 def _as_set(rows):
@@ -83,7 +83,7 @@ def test_scan_multi_page(db_dir: Path) -> None:
     # Act
     rows = scan(handle)
 
-    # Assert — all inserted rows returned, unordered comparison (D-10)
+    # Assert — all inserted rows returned, unordered comparison
     expected = {
         (rid.page_id, rid.slot_id, tuple(sorted(vals.items())))
         for rid, vals in inserted_rids
@@ -105,7 +105,7 @@ def test_scan_restart_returns_same_set(db_dir: Path) -> None:
     handle2 = open_table(db_dir, "t")
     rows_after = scan(handle2)
 
-    # Assert — same live set, unordered (D-10, SCAN-03)
+    # Assert — same live set, unordered
     assert _as_set(rows_after) == _as_set(rows_before)
 
 

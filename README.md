@@ -154,41 +154,40 @@ services or network access required.
 
 ## Project Layout
 
+The package is a single flat module — every file lives directly under `src/superdb/`.
+Layer boundaries are kept legible by naming convention: `cli_*` for command handlers,
+`*_renderer`/`renderer` for the presentation layer (the only zone that may import rich),
+and everything else is the stdlib-only storage core.
+
 ```
 super_db/
-├── src/super_db/
-│   ├── db.py                    # init_db: create db directory + empty catalog
-│   ├── catalog/
-│   │   ├── catalog.py           # catalog read/write, table CRUD, row-level ops
-│   │   └── schema.py            # TableMeta, Column, ColumnType, StorageTrack dataclasses
-│   ├── cli/
-│   │   ├── main.py              # argparse root; noun/verb dispatch
-│   │   └── commands/
-│   │       ├── init.py          # db init
-│   │       ├── table.py         # table create/list/describe/drop
-│   │       ├── row.py           # row insert/get/scan/update/delete/hexdump
-│   │       ├── page.py          # page show
-│   │       └── index.py         # index show + B+Tree walker
-│   ├── storage/
-│   │   ├── page_layout.py       # struct constants: PAGE_HDR, SLOT, HEADER_SIZE, SLOT_ENTRY_SIZE
-│   │   ├── page.py              # Page: in-memory mutable bytearray + slot operations
-│   │   ├── heap_file.py         # HeapFile: paged file reader/writer using os.pread/pwrite
-│   │   ├── engine.py            # StorageEngine: higher-level table operations
-│   │   ├── tuple_codec.py       # encode_tuple/decode_tuple + FieldSpan describe_tuple
-│   │   ├── rid.py               # RID(page_id, slot_id) frozen dataclass
-│   │   └── row.py               # Row(rid, values) result type
-│   ├── index/
-│   │   ├── node_layout.py       # B+Tree struct constants, key codecs, node encode/decode
-│   │   └── bplustree.py         # BPlusTree: insert, search, split, persistence (.idx file)
-│   ├── render/
-│   │   ├── protocol.py          # Renderer Protocol (stdlib only, no rich import)
-│   │   ├── plain_renderer.py    # PlainRenderer: deterministic text output, used in tests
-│   │   └── rich_renderer.py     # RichRenderer: styled terminal output (only file importing rich)
-│   └── common/
-│       ├── constants.py         # CATALOG_FILE, DEFAULT_PAGE_SIZE, FORMAT_VERSION
-│       ├── durability.py        # write_page (pwrite+fsync), write_json_atomic (temp+replace)
-│       ├── errors.py            # SuperDBError hierarchy
-│       └── log.py               # loguru setup
+├── src/superdb/
+│   ├── database.py              # init_db: create db directory + empty catalog
+│   ├── catalog.py               # catalog read/write, table CRUD, row-level ops
+│   ├── schema.py                # TableMeta, Column, ColumnType, StorageTrack dataclasses
+│   ├── page_layout.py           # struct constants: PAGE_HDR, SLOT, HEADER_SIZE, SLOT_ENTRY_SIZE
+│   ├── page.py                  # Page: in-memory mutable bytearray + slot operations
+│   ├── heap_file.py             # HeapFile: paged file reader/writer using os.pread/pwrite
+│   ├── engine.py                # StorageEngine: higher-level table operations
+│   ├── tuple_codec.py           # encode_tuple/decode_tuple + FieldSpan describe_tuple
+│   ├── rid.py                   # RID(page_id, slot_id) frozen dataclass
+│   ├── row.py                   # Row(rid, values) result type
+│   ├── node_layout.py           # B+Tree struct constants, key codecs, node encode/decode
+│   ├── bplustree.py             # BPlusTree: insert, search, split, persistence (.idx file)
+│   ├── renderer.py              # Renderer Protocol (stdlib only, no rich import)
+│   ├── plain_renderer.py        # PlainRenderer: deterministic text output, used in tests
+│   ├── rich_renderer.py         # RichRenderer: styled terminal output (only file importing rich)
+│   ├── constants.py             # CATALOG_FILE, DEFAULT_PAGE_SIZE, FORMAT_VERSION
+│   ├── durability.py            # write_page (pwrite+fsync), write_json_atomic (temp+replace)
+│   ├── errors.py                # SuperDBError hierarchy
+│   ├── log.py                   # loguru setup
+│   ├── cli.py                   # argparse root; noun/verb dispatch
+│   ├── cli_common.py            # shared CLI helpers (resolve_db_dir)
+│   ├── cli_db.py                # db init
+│   ├── cli_table.py             # table create/list/describe/drop
+│   ├── cli_row.py               # row insert/get/scan/update/delete/hexdump
+│   ├── cli_page.py              # page show
+│   └── cli_index.py             # index show + B+Tree walker
 ├── tests/                       # pytest suite (one file per module or feature)
 ├── scripts/
 │   └── demo.py                  # 9-step end-to-end showcase; run to see live visualizations

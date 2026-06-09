@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from super_db.common.errors import RecordNotFoundError
-from super_db.db import init_db
-from super_db.storage.engine import StorageEngine
+from superdb.database import init_db
+from superdb.engine import StorageEngine
+from superdb.errors import RecordNotFoundError
 
 
 def test_nine_step_scenario(db_dir: Path) -> None:

@@ -3,15 +3,15 @@ import sys
 
 from loguru import logger
 
-from super_db import __version__
-from super_db.cli.commands.index import add_index_parser, run_index
-from super_db.cli.commands.init import add_init_parser, run_init
-from super_db.cli.commands.page import add_page_parser, run_page
-from super_db.cli.commands.row import add_row_parser, run_row
-from super_db.cli.commands.table import add_table_parser, run_table
-from super_db.common.errors import SuperDBError
-from super_db.common.log import setup_logging
-from super_db.render.rich_renderer import RichRenderer
+from superdb import __version__
+from superdb.cli_db import add_init_parser, run_init
+from superdb.cli_index import add_index_parser, run_index
+from superdb.cli_page import add_page_parser, run_page
+from superdb.cli_row import add_row_parser, run_row
+from superdb.cli_table import add_table_parser, run_table
+from superdb.errors import SuperDBError
+from superdb.log import setup_logging
+from superdb.rich_renderer import RichRenderer
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -56,7 +56,11 @@ def main() -> None:
         sys.exit(1)
 
     renderer = RichRenderer()
-    logger.debug("cli: command noun={noun} verb={verb}", noun=args.noun, verb=getattr(args, "verb", None))
+    logger.debug(
+        "cli: command noun={noun} verb={verb}",
+        noun=args.noun,
+        verb=getattr(args, "verb", None),
+    )
 
     try:
         if args.noun == "db" and args.verb == "init":

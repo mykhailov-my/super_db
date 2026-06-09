@@ -5,7 +5,6 @@ the venv-installed binary, the same binary a user would call.
 """
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -80,7 +79,7 @@ def test_default_quiet(tmp_path: Path) -> None:
 
 
 def test_global_db_flag_before_subcommand(tmp_path: Path) -> None:
-    # --db is a global flag (D-02): it must work placed before the noun/verb.
+    # --db is a global flag: it must work placed before the noun/verb.
     db_dir = tmp_path / "mydb"
     result = _run("--db", str(db_dir), "db", "init")
     assert result.returncode == 0

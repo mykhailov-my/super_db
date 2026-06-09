@@ -1,9 +1,9 @@
 """Tests for storage/tuple_codec.py: golden-byte, round-trip, FieldSpan, malformed-buffer."""
 import pytest
 
-from super_db.catalog.schema import Column, ColumnType
-from super_db.common.errors import StorageError
-from super_db.storage.tuple_codec import FieldSpan, decode_tuple, describe_tuple, encode_tuple
+from superdb.errors import StorageError
+from superdb.schema import Column, ColumnType
+from superdb.tuple_codec import FieldSpan, decode_tuple, describe_tuple, encode_tuple
 
 # Two-column schema reused by the golden-byte tests (matches RESEARCH golden sequences).
 # Both columns are nullable so the NULL-bitmap cases below are valid records.

@@ -3,10 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from super_db.common.errors import RecordNotFoundError
-from super_db.db import init_db
-from super_db.storage.engine import StorageEngine
-from super_db.storage.rid import RID
+from superdb.database import init_db
+from superdb.engine import StorageEngine
+from superdb.errors import RecordNotFoundError
+from superdb.rid import RID
 
 
 def _as_set(rows):
@@ -86,7 +86,7 @@ def test_delete_already_dead_raises(db_dir: Path) -> None:
     # Act
     engine.delete("t", rid)
 
-    # Assert — second delete raises (D-04: no idempotent no-op)
+    # Assert — second delete raises (no idempotent no-op)
     with pytest.raises(RecordNotFoundError):
         engine.delete("t", rid)
 

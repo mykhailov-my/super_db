@@ -5,16 +5,15 @@ Mirrors the page_layout.py / page.py split:
   bplustree.py   — BPlusTree class (algorithm + I/O)
 
 All struct formats use explicit '<' (little-endian, no alignment padding).
-Zero rich/loguru imports — renderer firewall applies to the entire index/ package.
+Zero rich/loguru imports — the renderer firewall applies to the index code.
 """
 from __future__ import annotations
 
 import struct
 from dataclasses import dataclass
 
-from ..catalog.schema import ColumnType  # noqa: F401 — exported for bplustree convenience
-from ..common.errors import IndexKeyTooLongError, StorageError
-from ..storage.rid import RID
+from superdb.errors import IndexKeyTooLongError, StorageError
+from superdb.rid import RID
 
 # ---------------------------------------------------------------------------
 # Node type and key type sentinels
@@ -71,7 +70,7 @@ U16 = struct.Struct("<H")  # 2 bytes
 class LeafNode:
     """Leaf B+Tree node: stores (encoded_key, RID) pairs sorted by key.
 
-    Keys are stored as encoded bytes (never decoded str — Pitfall 6).
+    Keys are stored as encoded bytes (never decoded str).
     next_leaf is the page_id of the right sibling leaf; 0 means no sibling.
     """
 
@@ -141,10 +140,10 @@ def compare_int_keys(a: bytes, b: bytes) -> int:
 
 
 def compare_text_keys(a: bytes, b: bytes) -> int:
-    """Compare two encoded TEXT keys by raw UTF-8 byte order (D-02).
+    """Compare two encoded TEXT keys by raw UTF-8 byte order.
 
     Extracts the actual payload bytes from each fixed-size slot and compares
-    as Python bytes — never as str (Pitfall 6).
+    as Python bytes — never as str.
     """
     la = U16.unpack(a[:2])[0]
     lb = U16.unpack(b[:2])[0]
@@ -154,7 +153,7 @@ def compare_text_keys(a: bytes, b: bytes) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Fanout helpers (D-05)
+# Fanout helpers
 # ---------------------------------------------------------------------------
 
 
@@ -184,7 +183,7 @@ def text_internal_max_keys(page_size: int, cap: int) -> int:
 
 
 def assert_node_fits(node_bytes_len: int, page_size: int) -> None:
-    """Assert that the serialized node does not exceed the page size (D-05).
+    """Assert that the serialized node does not exceed the page size.
 
     Raises StorageError if node_bytes_len > page_size.
     Called by every encode function before returning.
@@ -242,7 +241,7 @@ def _check_count(count: int, pos: int, entry_size: int, data_len: int) -> None:
 def decode_header(data: bytes) -> Header:
     """Decode the index file header page.
 
-    Validates magic and format_version before trusting any other field (Pitfall 8).
+    Validates magic and format_version before trusting any other field.
     Raises StorageError on invalid magic or unsupported version.
     """
     magic, fv, _tag, key_type, text_key_cap, root_page_id = IDX_HDR_FIXED.unpack(
@@ -270,7 +269,7 @@ def decode_header(data: bytes) -> Header:
 
 
 # ---------------------------------------------------------------------------
-# Leaf encode / decode — separate INT and TEXT paths (D-07, Pitfall 9)
+# Leaf encode / decode — separate INT and TEXT paths
 # ---------------------------------------------------------------------------
 
 
@@ -345,7 +344,7 @@ def _decode_leaf_text(data: bytes, cap: int) -> LeafNode:
 def encode_leaf(node: LeafNode, key_type: int, text_key_cap: int, page_size: int) -> bytes:
     """Encode a leaf node to a full page_size byte buffer.
 
-    Dispatches to the INT or TEXT implementation (D-07 — no is_leaf soup).
+    Dispatches to the INT or TEXT implementation (no is_leaf soup).
     """
     if key_type == KEY_TYPE_INT:
         return _encode_leaf_int(node, page_size)
@@ -353,7 +352,7 @@ def encode_leaf(node: LeafNode, key_type: int, text_key_cap: int, page_size: int
 
 
 # ---------------------------------------------------------------------------
-# Internal node encode / decode — separate INT and TEXT paths (D-07, Pitfall 9)
+# Internal node encode / decode — separate INT and TEXT paths
 # ---------------------------------------------------------------------------
 
 
@@ -445,7 +444,7 @@ def encode_internal(
 ) -> bytes:
     """Encode an internal node to a full page_size byte buffer.
 
-    Dispatches to the INT or TEXT implementation (D-07 — separate code paths).
+    Dispatches to the INT or TEXT implementation (separate code paths).
     """
     if key_type == KEY_TYPE_INT:
         return _encode_internal_int(node, page_size)
@@ -462,7 +461,7 @@ def decode_node(data: bytes, key_type: int, text_key_cap: int) -> LeafNode | Int
 
     Returns LeafNode or InternalNode. Raises StorageError on unknown tag.
     This is what bplustree._read_node calls — the return type drives isinstance
-    branching in the algorithm (separate leaf/internal code paths, D-07).
+    branching in the algorithm (separate leaf/internal code paths).
     """
     tag = data[0]
     if tag == NODE_TYPE_LEAF:

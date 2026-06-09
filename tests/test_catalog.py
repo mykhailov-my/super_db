@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from super_db.catalog.catalog import (
+from superdb.catalog import (
     TableHandle,
     create_table,
     delete,
@@ -13,12 +13,11 @@ from super_db.catalog.catalog import (
     insert,
     list_tables,
     open_table,
-    scan,
     update,
 )
-from super_db.common.errors import RecordNotFoundError, StorageError
-from super_db.db import init_db
-from super_db.storage.rid import RID
+from superdb.database import init_db
+from superdb.errors import RecordNotFoundError, StorageError
+from superdb.rid import RID
 
 
 def test_validate_schema(db_dir: Path) -> None:
@@ -293,7 +292,7 @@ def test_corrupt_catalog_bad_table_name_rejected(tmp_path: Path) -> None:
 def test_create_table_failed_save_leaves_no_heap(db_dir: Path, monkeypatch) -> None:
     """If catalog persistence fails, no orphan .tbl heap is left behind — the
     catalog save is the commit point (heap is created only afterward)."""
-    from super_db.catalog import catalog as catalog_mod
+    from superdb import catalog as catalog_mod
 
     init_db(db_dir)
 

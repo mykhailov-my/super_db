@@ -1,4 +1,4 @@
-"""CLI integration tests for the `row` noun (subprocess, D-09)."""
+"""CLI integration tests for the `row` noun (subprocess)."""
 import shutil
 import subprocess
 from pathlib import Path

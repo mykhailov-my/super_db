@@ -12,17 +12,17 @@ import os
 import sys
 from pathlib import Path
 
-from super_db.catalog.catalog import open_table
-from super_db.cli.commands.index import _dump_tree
-from super_db.common.errors import RecordNotFoundError, SuperDBError
-from super_db.db import init_db
-from super_db.index.node_layout import decode_header
-from super_db.render.rich_renderer import RichRenderer
-from super_db.storage.engine import StorageEngine
-from super_db.storage.heap_file import HeapFile
-from super_db.storage.page import Page
-from super_db.storage.page_layout import HEADER_SIZE, SLOT_FLAG_LIVE
-from super_db.storage.tuple_codec import describe_tuple
+from superdb.catalog import open_table
+from superdb.cli_index import _dump_tree
+from superdb.errors import RecordNotFoundError, SuperDBError
+from superdb.database import init_db
+from superdb.node_layout import decode_header
+from superdb.rich_renderer import RichRenderer
+from superdb.engine import StorageEngine
+from superdb.heap_file import HeapFile
+from superdb.page import Page
+from superdb.page_layout import HEADER_SIZE, SLOT_FLAG_LIVE
+from superdb.tuple_codec import describe_tuple
 
 
 def _section(n: int, title: str) -> None:

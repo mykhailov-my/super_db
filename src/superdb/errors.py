@@ -27,8 +27,8 @@ class IndexKeyNotFoundError(StorageError):
 
 
 class DuplicateKeyError(StorageError):
-    """Raised when insert(key) finds the key already present (unique index, D-08)."""
+    """Raised when insert(key) finds the key already present (unique index)."""
 
 
 class IndexKeyTooLongError(StorageError):
-    """Raised when a TEXT key exceeds the index's text_key_cap bytes (D-06)."""
+    """Raised when a TEXT key exceeds the index's text_key_cap bytes."""

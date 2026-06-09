@@ -4,7 +4,7 @@ import tempfile as _tempfile
 
 import pytest
 
-from super_db.common.durability import write_file_atomic, write_json_atomic
+from superdb.durability import write_file_atomic, write_json_atomic
 
 
 def test_write_file_atomic_round_trip(tmp_path):
@@ -60,7 +60,7 @@ def test_overwrite_replaces_existing(tmp_path):
 
 def test_temp_in_same_dir_supports_replace(tmp_path, monkeypatch):
     """Hardened impl must pass dir=path.parent to mkstemp (same-filesystem
-    invariant so os.replace stays atomic — Pitfall 1)."""
+    invariant so os.replace stays atomic)."""
     # Arrange
     recorded_dirs: list = []
     real_mkstemp = _tempfile.mkstemp
@@ -69,7 +69,7 @@ def test_temp_in_same_dir_supports_replace(tmp_path, monkeypatch):
         recorded_dirs.append(kwargs.get("dir"))
         return real_mkstemp(*args, **kwargs)
 
-    import super_db.common.durability as _dur
+    import superdb.durability as _dur
     monkeypatch.setattr(_dur.tempfile, "mkstemp", capturing_mkstemp)
 
     target = tmp_path / "out.bin"
@@ -89,7 +89,7 @@ def test_no_temp_left_on_write_failure(tmp_path, monkeypatch):
     target = tmp_path / "data.json"
     write_file_atomic(target, b"original")
 
-    import super_db.common.durability as _dur
+    import superdb.durability as _dur
 
     def boom(*args, **kwargs):
         raise OSError("disk full")

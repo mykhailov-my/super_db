@@ -1,20 +1,22 @@
 import argparse
-from pathlib import Path
 
-from super_db.catalog.catalog import (
+from superdb.catalog import (
     create_table,
     describe_table,
     drop_table,
     list_tables,
 )
-from super_db.common.constants import DEFAULT_PAGE_SIZE
+from superdb.cli_common import resolve_db_dir as _resolve_db
+from superdb.constants import DEFAULT_PAGE_SIZE
 
 
 def add_table_parser(verbs) -> None:
     create = verbs.add_parser("create", help="create a new table")
     create.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
     create.add_argument("--table", metavar="NAME", required=True, help="table name")
-    create.add_argument("--columns", metavar="SPEC", required=True, help="column spec: name:TYPE,...")
+    create.add_argument(
+        "--columns", metavar="SPEC", required=True, help="column spec: name:TYPE,..."
+    )
     create.add_argument("--page-size", metavar="N", type=int, default=DEFAULT_PAGE_SIZE)
 
     ls = verbs.add_parser("list", help="list all tables")
@@ -27,13 +29,6 @@ def add_table_parser(verbs) -> None:
     drop = verbs.add_parser("drop", help="drop a table")
     drop.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
     drop.add_argument("--table", metavar="NAME", required=True, help="table name")
-
-
-def _resolve_db(args) -> Path:
-    db = getattr(args, "db", None)
-    if db is None:
-        raise ValueError("missing --db PATH (the database directory)")
-    return Path(db).resolve()
 
 
 def _parse_columns_spec(spec: str) -> list[tuple[str, str, bool]]:

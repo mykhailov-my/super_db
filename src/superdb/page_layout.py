@@ -1,8 +1,8 @@
 import struct
 
-# Page header (D-01): four u16 LE — format_version, slot_count, free_start, free_end
+# Page header: four u16 LE — format_version, slot_count, free_start, free_end
 PAGE_HDR = struct.Struct("<HHHH")
-# Slot entry (D-04): three u16 LE — offset, length, flags (bit 0 = live/tombstone)
+# Slot entry: three u16 LE — offset, length, flags (bit 0 = live/tombstone)
 SLOT = struct.Struct("<HHH")
 
 HEADER_SIZE = PAGE_HDR.size      # 8

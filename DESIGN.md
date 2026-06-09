@@ -154,7 +154,7 @@ appends the tuple bytes just before `free_end` and decrements `free_end`.
 requires `n` tuple bytes and one new slot directory entry fits if:
 `free_end - free_start >= n + SLOT_ENTRY_SIZE` (6 bytes).
 
-Constants from `storage/page_layout.py`:
+Constants from `page_layout.py`:
 - `HEADER_SIZE = 8`
 - `SLOT_ENTRY_SIZE = 6`
 - `DEFAULT_PAGE_SIZE = 4096`

@@ -5,7 +5,7 @@ import pytest
 
 
 def test_column_fields():
-    from super_db.catalog.schema import Column, ColumnType
+    from superdb.schema import Column, ColumnType
 
     col = Column("id", ColumnType.INT, False)
     assert col.name == "id"
@@ -14,7 +14,7 @@ def test_column_fields():
 
 
 def test_column_is_frozen():
-    from super_db.catalog.schema import Column, ColumnType
+    from superdb.schema import Column, ColumnType
 
     col = Column("id", ColumnType.INT, False)
     with pytest.raises((dataclasses.FrozenInstanceError, AttributeError)):
@@ -22,7 +22,7 @@ def test_column_is_frozen():
 
 
 def test_tablemeta_has_all_cat01_fields():
-    from super_db.catalog.schema import (
+    from superdb.schema import (
         Column,
         ColumnType,
         StorageTrack,
@@ -45,7 +45,7 @@ def test_tablemeta_has_all_cat01_fields():
 
 
 def test_tablemeta_columns_is_tuple():
-    from super_db.catalog.schema import Column, ColumnType, StorageTrack, TableMeta
+    from superdb.schema import Column, ColumnType, StorageTrack, TableMeta
 
     col = Column("id", ColumnType.INT, False)
     meta = TableMeta(
@@ -60,20 +60,20 @@ def test_tablemeta_columns_is_tuple():
 
 
 def test_columntype_values():
-    from super_db.catalog.schema import ColumnType
+    from superdb.schema import ColumnType
 
     assert ColumnType.INT.value == "INT"
     assert ColumnType.TEXT.value == "TEXT"
 
 
 def test_storagetrack_value():
-    from super_db.catalog.schema import StorageTrack
+    from superdb.schema import StorageTrack
 
     assert StorageTrack.ROW.value == "row"
 
 
 def test_rid_fields_and_frozen():
-    from super_db.storage.rid import RID
+    from superdb.rid import RID
 
     rid = RID(2, 5)
     assert rid.page_id == 2

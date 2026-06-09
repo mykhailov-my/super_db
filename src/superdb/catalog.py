@@ -5,16 +5,16 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from super_db.catalog.schema import Column, ColumnType, StorageTrack, TableMeta
-from super_db.common.constants import CATALOG_FILE, DEFAULT_PAGE_SIZE, FORMAT_VERSION
-from super_db.common.durability import write_json_atomic
-from super_db.common.errors import StorageError
-from super_db.storage.heap_file import HeapFile
-from super_db.storage.page import Page
-from super_db.storage.page_layout import HEADER_SIZE, SLOT_ENTRY_SIZE
-from super_db.storage.rid import RID
-from super_db.storage.row import Row
-from super_db.storage.tuple_codec import decode_tuple, encode_tuple
+from superdb.constants import CATALOG_FILE, DEFAULT_PAGE_SIZE, FORMAT_VERSION
+from superdb.durability import write_json_atomic
+from superdb.errors import StorageError
+from superdb.heap_file import HeapFile
+from superdb.page import Page
+from superdb.page_layout import HEADER_SIZE, SLOT_ENTRY_SIZE
+from superdb.rid import RID
+from superdb.row import Row
+from superdb.schema import Column, ColumnType, StorageTrack, TableMeta
+from superdb.tuple_codec import decode_tuple, encode_tuple
 
 _IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _VALID_TYPES = frozenset(t.value for t in ColumnType)
@@ -192,22 +192,22 @@ def get(handle: TableHandle, rid: RID) -> dict:
 def scan(handle: TableHandle) -> list[Row]:
     """Return all live records in the heap as a list[Row]. Order is unspecified."""
     cols = list(handle.meta.columns)
-    ps = handle.meta.page_size
+    page_size = handle.meta.page_size
     try:
         fd = os.open(str(handle.heap_path), os.O_RDONLY)
     except FileNotFoundError as e:
         raise StorageError(f"heap file not found: {handle.heap_path}") from e
     try:
         size = os.fstat(fd).st_size
-        if size % ps != 0:
+        if size % page_size != 0:
             raise StorageError(
-                f"heap file size {size} is not a multiple of page_size {ps}"
+                f"heap file size {size} is not a multiple of page_size {page_size}"
             )
-        page_count = size // ps
+        page_count = size // page_size
         rows: list = []
         for page_id in range(page_count):
-            raw = os.pread(fd, ps, page_id * ps)
-            page = Page.from_bytes(raw, ps)
+            raw = os.pread(fd, page_size, page_id * page_size)
+            page = Page.from_bytes(raw, page_size)
             for slot_id in page.live_slots():
                 record = page.get_tuple(slot_id)
                 values_list = decode_tuple(record, cols)
@@ -231,3 +231,38 @@ def update(handle: TableHandle, rid: RID, record: dict) -> RID:
 def delete(handle: TableHandle, rid: RID) -> None:
     """Tombstone the record at rid. Raises RecordNotFoundError if not live."""
     HeapFile(handle.heap_path, handle.meta.page_size).delete(rid)
+
+
+class Catalog:
+    """Table catalog bound to a database directory.
+
+    A thin object over the module-level functions above: it holds the one piece
+    of shared state (db_dir) so callers don't thread it through every call. Nothing
+    else is cached — every method re-reads catalog.json from disk, so a fresh
+    Catalog(db_dir) always reflects the current on-disk state.
+    """
+
+    __slots__ = ("_db_dir",)
+
+    def __init__(self, db_dir: Path) -> None:
+        self._db_dir = db_dir
+
+    def create_table(
+        self,
+        name: str,
+        columns: list[tuple[str, str, bool]],
+        page_size: int = DEFAULT_PAGE_SIZE,
+    ) -> TableMeta:
+        return create_table(self._db_dir, name, columns, page_size)
+
+    def open_table(self, name: str) -> TableHandle:
+        return open_table(self._db_dir, name)
+
+    def list_tables(self) -> list[TableMeta]:
+        return list_tables(self._db_dir)
+
+    def describe_table(self, name: str) -> TableMeta:
+        return describe_table(self._db_dir, name)
+
+    def drop_table(self, name: str) -> None:
+        drop_table(self._db_dir, name)

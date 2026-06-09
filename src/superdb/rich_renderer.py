@@ -7,8 +7,8 @@ from rich.table import Table
 from rich.text import Text
 from rich.tree import Tree
 
-from super_db.catalog.schema import TableMeta
-from super_db.storage.page_layout import SLOT_ENTRY_SIZE
+from superdb.page_layout import SLOT_ENTRY_SIZE
+from superdb.schema import TableMeta
 
 FIELD_COLORS = [
     "green",
@@ -142,7 +142,7 @@ class RichRenderer:
             bm_start, bm_len = null_bitmap_span
             for i in range(bm_start, bm_start + bm_len):
                 color_map[i] = "white on dark_orange3"
-        for idx, (name, offset, length, _type_label) in enumerate(field_spans):
+        for idx, (_name, offset, length, _type_label) in enumerate(field_spans):
             color = FIELD_COLORS[idx % len(FIELD_COLORS)]
             for i in range(offset, offset + length):
                 color_map[i] = color
@@ -208,7 +208,10 @@ class RichRenderer:
             bm_start, bm_len = null_bitmap_span
             leg = Text()
             leg.append("■ ", style="white on dark_orange3")
-            leg.append(f"{'dark_orange3':<20} {'null_bitmap':<12} {'—':<8} offset={bm_start}   length={bm_len}")
+            leg.append(
+                f"{'dark_orange3':<20} {'null_bitmap':<12} {'—':<8} "
+                f"offset={bm_start}   length={bm_len}"
+            )
             lines.append(leg)
 
         # Combine into a single Text block

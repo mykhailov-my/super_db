@@ -10,11 +10,11 @@ dependencies = [
 ]
 
 [project.scripts]
-db-cli = "super_db.cli.main:main"
+db-cli = "superdb.cli:main"
 
 [tool.poetry]
 package-mode = true
-packages = [{ include = "super_db", from = "src" }]
+packages = [{ include = "superdb", from = "src" }]
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=8,<9"

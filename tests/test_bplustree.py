@@ -1,4 +1,4 @@
-"""Tests for index/bplustree.py — BPlusTree create/insert/search + restart (IDX-02..IDX-04).
+"""Tests for bplustree.py — BPlusTree create/insert/search + restart (IDX-02..IDX-04).
 
 Covers 11 of the 12 named validation tests; test_build_over_heap is plan 07-03's
 engine-integration test and is intentionally omitted here.
@@ -7,19 +7,19 @@ import random
 
 import pytest
 
-from super_db.common.errors import DuplicateKeyError, IndexKeyNotFoundError, IndexKeyTooLongError
-from super_db.index.bplustree import BPlusTree
-from super_db.index.node_layout import (
+from superdb.bplustree import BPlusTree
+from superdb.errors import DuplicateKeyError, IndexKeyNotFoundError, IndexKeyTooLongError
+from superdb.node_layout import (
     KEY_TYPE_INT,
     KEY_TYPE_TEXT,
+    NULL_PAGE_ID,
     TEXT_KEY_CAP_DEFAULT,
+    LeafNode,
     assert_node_fits,
     encode_leaf,
     int_leaf_max,
-    LeafNode,
-    NULL_PAGE_ID,
 )
-from super_db.storage.rid import RID
+from superdb.rid import RID
 
 # Small page size — forces splits with ~20-entry INT fanout (verified: int_leaf_max(256) = 20)
 SMALL_PAGE = 256
@@ -74,7 +74,7 @@ def test_leaf_split_root_becomes_internal(tmp_path):
 
     # Assert
     assert tree.root_is_internal(), "root should be internal after leaf split"
-    # The separator key (first key of right leaf) must be searchable (Pitfall 1)
+    # The separator key (first key of right leaf) must be searchable
     for k in keys:
         assert tree.search(k) == RID(k, 0), f"key {k} not found after leaf split"
 
@@ -165,7 +165,7 @@ def test_search_not_found(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# IDX-03 / D-08: duplicate key
+# duplicate key
 # ---------------------------------------------------------------------------
 
 def test_duplicate_key(tmp_path):
@@ -183,7 +183,7 @@ def test_duplicate_key(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# D-05: fanout assertion
+# fanout assertion
 # ---------------------------------------------------------------------------
 
 def test_fanout_assertion(tmp_path):
@@ -205,13 +205,13 @@ def test_fanout_assertion(tmp_path):
     assert_node_fits(len(encoded), ps)
 
     # assert_node_fits SHOULD raise when given a length > page_size
-    from super_db.common.errors import StorageError
+    from superdb.errors import StorageError
     with pytest.raises(StorageError):
         assert_node_fits(ps + 1, ps)
 
 
 # ---------------------------------------------------------------------------
-# D-06: TEXT key too long
+# TEXT key too long
 # ---------------------------------------------------------------------------
 
 def test_text_key_too_long(tmp_path):

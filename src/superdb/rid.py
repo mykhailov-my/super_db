@@ -18,3 +18,6 @@ class RID:
 
     page_id: int
     slot_id: int
+
+    def __str__(self) -> str:
+        return f"{self.page_id}:{self.slot_id}"
