@@ -8,6 +8,7 @@ from superdb.cli_db import add_init_parser, run_init
 from superdb.cli_index import add_index_parser, run_index
 from superdb.cli_page import add_page_parser, run_page
 from superdb.cli_row import add_row_parser, run_row
+from superdb.cli_sql import add_sql_parser, run_sql
 from superdb.cli_table import add_table_parser, run_table
 from superdb.errors import SuperDBError
 from superdb.log import setup_logging
@@ -42,6 +43,10 @@ def build_parser() -> argparse.ArgumentParser:
     index_verbs = index_parser.add_subparsers(dest="verb", title="index commands", metavar="<verb>")
     add_index_parser(index_verbs)
 
+    sql_parser = nouns.add_parser("sql", help="SQL parsing commands")
+    sql_verbs = sql_parser.add_subparsers(dest="verb", title="sql commands", metavar="<verb>")
+    add_sql_parser(sql_verbs)
+
     return parser
 
 
@@ -73,6 +78,8 @@ def main() -> None:
             run_page(args, renderer)
         elif args.noun == "index":
             run_index(args, renderer)
+        elif args.noun == "sql":
+            run_sql(args, renderer)
         else:
             parser.print_help(sys.stderr)
             sys.exit(1)

@@ -9,6 +9,13 @@ class Renderer(Protocol):
     def render_message(self, msg: str) -> None: ...
     def render_error(self, msg: str) -> None: ...
 
+    # --- v4.0: query results, decoupled from any single table's schema ---
+    def render_result(
+        self,
+        columns: Sequence[str],
+        rows: Sequence[dict],
+    ) -> None: ...
+
     # --- Phase 8 additions ---
     def render_rows(
         self,

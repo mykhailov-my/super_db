@@ -29,10 +29,24 @@ class RichRenderer:
         self._err_console = Console(stderr=True, width=200)
 
     def render_message(self, msg: str) -> None:
-        self._console.print(msg)
+        # markup=False: messages are plain text; brackets like "[id]" in a
+        # printed AST must not be parsed as Rich style tags.
+        self._console.print(msg, markup=False)
 
     def render_error(self, msg: str) -> None:
         self._err_console.print(f"[red]Error:[/red] {msg}")
+
+    def render_result(self, columns: Sequence[str], rows: Sequence[dict]) -> None:
+        tbl = Table(show_header=True, border_style=None, box=rich_box.SIMPLE_HEAD)
+        for col in columns:
+            tbl.add_column(col)
+        for row in rows:
+            tbl.add_row(*(
+                Text("NULL", style="italic dim") if row[c] is None else str(row[c])
+                for c in columns
+            ))
+        self._console.print(tbl)
+        self._console.print(f"({len(rows)} row{'s' if len(rows) != 1 else ''})")
 
     def render_rows(
         self,

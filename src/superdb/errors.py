@@ -32,3 +32,17 @@ class DuplicateKeyError(StorageError):
 
 class IndexKeyTooLongError(StorageError):
     """Raised when a TEXT key exceeds the index's text_key_cap bytes."""
+
+
+class ParseError(SuperDBError):
+    """Raised when SQL text cannot be parsed. Carries the 0-based position of
+    the offending token so the CLI can point at it."""
+
+    def __init__(self, message: str, pos: int):
+        super().__init__(message)
+        self.pos = pos
+
+
+class LogicalError(SuperDBError):
+    """Raised when a parsed statement is structurally valid but semantically
+    wrong — unknown table/column, INSERT arity mismatch, duplicate columns."""

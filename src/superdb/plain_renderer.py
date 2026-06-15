@@ -30,6 +30,12 @@ class PlainRenderer:
             )
             print(f"{rid_str}\t{values}")
 
+    def render_result(self, columns: Sequence[str], rows: Sequence[dict]) -> None:
+        print("\t".join(columns))
+        for row in rows:
+            print("\t".join("NULL" if row[c] is None else str(row[c]) for c in columns))
+        print(f"({len(rows)} row{'s' if len(rows) != 1 else ''})")
+
     def render_schema(self, meta: TableMeta) -> None:
         print(f"table: {meta.name}  track={meta.storage_track.value}  page_size={meta.page_size}")
         for col in meta.columns:
