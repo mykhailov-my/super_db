@@ -6,6 +6,7 @@ import pytest
 # constants
 # ---------------------------------------------------------------------------
 
+
 def test_constants_values():
     from superdb.constants import DEFAULT_PAGE_SIZE, FORMAT_VERSION, MAGIC, META_FILE
 
@@ -18,6 +19,7 @@ def test_constants_values():
 # ---------------------------------------------------------------------------
 # errors
 # ---------------------------------------------------------------------------
+
 
 def test_error_hierarchy():
     from superdb.errors import (
@@ -53,6 +55,7 @@ def test_open_error_is_catchable_as_superdb_error():
 # durability helpers (Phase 1: plain write; Phase 2 hardens to fsync+replace)
 # ---------------------------------------------------------------------------
 
+
 def test_write_file_atomic_writes_bytes(tmp_path):
     from superdb.durability import write_file_atomic
 
@@ -74,6 +77,7 @@ def test_write_json_atomic_writes_indented_json(tmp_path):
 # ---------------------------------------------------------------------------
 # setup_logging — level precedence
 # ---------------------------------------------------------------------------
+
 
 def test_setup_logging_debug_flag(monkeypatch):
     """--debug sets level DEBUG."""

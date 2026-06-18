@@ -1,4 +1,5 @@
 """Tests for Phase 6 mutations — update/delete on StorageEngine (MUT-01..MUT-04)."""
+
 from pathlib import Path
 
 import pytest
@@ -10,10 +11,7 @@ from superdb.rid import RID
 
 
 def _as_set(rows):
-    return {
-        (r.rid.page_id, r.rid.slot_id, tuple(sorted(r.values.items())))
-        for r in rows
-    }
+    return {(r.rid.page_id, r.rid.slot_id, tuple(sorted(r.values.items()))) for r in rows}
 
 
 def test_update_inplace_same_rid(db_dir: Path) -> None:
@@ -126,7 +124,9 @@ def test_mutations_survive_restart(db_dir: Path) -> None:
 
     # Perform mutations with engine1
     new_inplace_rid = engine1.update("t", rid_inplace, {"id": 1, "label": "zzz"})
-    new_relocate_rid = engine1.update("t", rid_relocate, {"id": 2, "label": "much longer text here"})
+    new_relocate_rid = engine1.update(
+        "t", rid_relocate, {"id": 2, "label": "much longer text here"}
+    )
     engine1.delete("t", rid_delete)
 
     # Act — simulate process restart with a completely fresh engine (no shared state)

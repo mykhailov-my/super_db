@@ -3,6 +3,7 @@
 Tests exercise the installed db-cli entry point via subprocess,
 mirroring the pattern in tests/test_cli.py.
 """
+
 import shutil
 import subprocess
 from pathlib import Path
@@ -23,7 +24,9 @@ def test_cli_table_create(tmp_path: Path) -> None:
     _run("db", "init", "--db", str(db_dir))
 
     # Act
-    result = _run("table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT")
+    result = _run(
+        "table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT"
+    )
 
     # Assert
     assert result.returncode == 0
@@ -50,7 +53,9 @@ def test_cli_table_create_bad_type(tmp_path: Path) -> None:
     _run("db", "init", "--db", str(db_dir))
 
     # Act — FLOAT is not a supported type
-    result = _run("table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:FLOAT")
+    result = _run(
+        "table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:FLOAT"
+    )
 
     # Assert
     assert result.returncode == 1
@@ -63,7 +68,16 @@ def test_cli_table_list(tmp_path: Path) -> None:
     db_dir = tmp_path / "mydb"
     _run("db", "init", "--db", str(db_dir))
     _run("table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT")
-    _run("table", "create", "--db", str(db_dir), "--table", "orders", "--columns", "id:INT,total:TEXT")
+    _run(
+        "table",
+        "create",
+        "--db",
+        str(db_dir),
+        "--table",
+        "orders",
+        "--columns",
+        "id:INT,total:TEXT",
+    )
 
     # Act
     result = _run("table", "list", "--db", str(db_dir))
@@ -78,7 +92,9 @@ def test_cli_table_describe(tmp_path: Path) -> None:
     # Arrange
     db_dir = tmp_path / "mydb"
     _run("db", "init", "--db", str(db_dir))
-    _run("table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT")
+    _run(
+        "table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT"
+    )
 
     # Act
     result = _run("table", "describe", "--db", str(db_dir), "--table", "users")

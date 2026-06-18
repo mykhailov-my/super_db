@@ -76,9 +76,12 @@ class Join:
 @dataclass(slots=True, frozen=True)
 class Aggregate:
     # group_by is a column name (or None for whole-table aggregation). aggregates
-    # is the list of (func, arg_column_or_None, output_label) to compute.
+    # is the list of (func, arg_column_or_None, output_label) to compute. output
+    # is the labels in SELECT-list order (the group column sits where it was
+    # written, not forced first).
     group_by: str | None
     aggregates: tuple[tuple[str, str | None, str], ...]
+    output: tuple[str, ...]
     child: object
 
 
@@ -151,11 +154,9 @@ def _select(stmt: SelectAST, db_dir: Path) -> LogicalNode:
     # Aggregate query? (any aggregate func in projections, or a GROUP BY)
     if stmt.group_by is not None or _has_aggregate(stmt.projections):
         node = _aggregate(stmt, scope, node)
-        # Aggregate output columns are the group column + aggregate labels; ORDER
-        # BY / LIMIT apply on top of the grouped result.
-        agg_cols = (() if stmt.group_by is None else (stmt.group_by,)) \
-            + tuple(label for _, _, label in node.aggregates)
-        return _order_and_limit(stmt, node, agg_cols)
+        # Output columns are the SELECT-list labels in written order; ORDER BY /
+        # LIMIT apply on top of the grouped result.
+        return _order_and_limit(stmt, node, node.output)
 
     # SQL eval order: WHERE → ORDER BY → projection → LIMIT. Sort below Projection
     # so ORDER BY can name a column the projection drops.
@@ -188,21 +189,24 @@ def _aggregate(stmt: SelectAST, scope: _Scope, child: LogicalNode) -> Aggregate:
     if stmt.group_by is not None:
         scope.require(stmt.group_by)
     aggs: list[tuple[str, str | None, str]] = []
+    output: list[str] = []  # labels in SELECT-list order
     for label, expr in _projection_items(stmt, scope):
         if isinstance(expr, FuncCall) and expr.name in _AGG_FUNCS:
             arg = None if expr.arg is None else scope.resolve(expr.arg)
             aggs.append((expr.name, arg, label))
+            output.append(label)
         elif isinstance(expr, ColumnRef):
             # A non-aggregate column is only valid if it's the GROUP BY column.
             if stmt.group_by is None or scope.resolve(expr) != scope.resolve_name(stmt.group_by):
                 raise LogicalError(
                     f"column {label!r} must appear in GROUP BY or an aggregate"
                 )
+            output.append(label)
         else:
             raise LogicalError(f"unsupported aggregate projection {label!r}")
     if not aggs:
         raise LogicalError("aggregate query needs at least one aggregate function")
-    return Aggregate(stmt.group_by, tuple(aggs), child)
+    return Aggregate(stmt.group_by, tuple(aggs), tuple(output), child)
 
 
 # --- column scope: single-table or two-table JOIN namespace ---
@@ -290,6 +294,12 @@ def _projection_items(stmt: SelectAST, scope: _Scope) -> tuple[tuple[str, object
             items.append((_func_label(expr), expr))
         else:
             raise LogicalError(f"unsupported projection: {expr!r}")
+    # Rows are dicts keyed by label; duplicate labels would silently collapse and
+    # drop a column's value. Reject rather than mislead.
+    labels = [label for label, _ in items]
+    dup = next((c for c in labels if labels.count(c) > 1), None)
+    if dup is not None:
+        raise LogicalError(f"duplicate output column {dup!r}; use distinct names")
     return tuple(items)
 
 

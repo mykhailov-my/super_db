@@ -14,7 +14,6 @@ from superdb.sql_ast import (
 )
 from superdb.sql_parser import parse
 
-
 # --- CREATE TABLE ---
 
 
@@ -104,11 +103,11 @@ def test_negative_limit_rejected():
 @pytest.mark.parametrize(
     "sql",
     [
-        "SELEC id FROM users",        # misspelled keyword
-        "SELECT FROM users",          # empty projection list
-        "INSERT INTO users VALUES",   # missing values
-        "CREATE TABLE users ()",      # no columns
-        "SELECT id users",            # missing FROM
+        "SELEC id FROM users",  # misspelled keyword
+        "SELECT FROM users",  # empty projection list
+        "INSERT INTO users VALUES",  # missing values
+        "CREATE TABLE users ()",  # no columns
+        "SELECT id users",  # missing FROM
     ],
 )
 def test_named_error_cases_raise_parse_error(sql):

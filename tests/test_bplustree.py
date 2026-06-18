@@ -3,6 +3,7 @@
 Covers 11 of the 12 named validation tests; test_build_over_heap is plan 07-03's
 engine-integration test and is intentionally omitted here.
 """
+
 import random
 
 import pytest
@@ -41,6 +42,7 @@ def _new_text_tree(tmp_path, page_size=SMALL_PAGE):
 # IDX-02a: insert with no split
 # ---------------------------------------------------------------------------
 
+
 def test_insert_no_split(tmp_path):
     """Insert a small number of INT keys into one leaf; root stays a leaf."""
     # Arrange
@@ -60,6 +62,7 @@ def test_insert_no_split(tmp_path):
 # ---------------------------------------------------------------------------
 # IDX-02b: leaf split — root becomes internal
 # ---------------------------------------------------------------------------
+
 
 def test_leaf_split_root_becomes_internal(tmp_path):
     """Insert just past int_leaf_max(256) keys; root must become an InternalNode."""
@@ -82,6 +85,7 @@ def test_leaf_split_root_becomes_internal(tmp_path):
 # ---------------------------------------------------------------------------
 # IDX-02c: two-level split with INT keys
 # ---------------------------------------------------------------------------
+
 
 def test_two_level_split_int(tmp_path):
     """Insert 30 random INT keys; tree must grow to internal root, all keys resolve."""
@@ -108,6 +112,7 @@ def test_two_level_split_int(tmp_path):
 # IDX-02d: two-level split with TEXT keys
 # ---------------------------------------------------------------------------
 
+
 def test_two_level_split_text(tmp_path):
     """Insert 30 distinct TEXT keys in random order; all keys resolve after splits."""
     # Arrange
@@ -133,6 +138,7 @@ def test_two_level_split_text(tmp_path):
 # IDX-03: search found
 # ---------------------------------------------------------------------------
 
+
 def test_search_found(tmp_path):
     """Insert known keys; assert exact RIDs returned by search."""
     # Arrange
@@ -152,6 +158,7 @@ def test_search_found(tmp_path):
 # IDX-03: search not found
 # ---------------------------------------------------------------------------
 
+
 def test_search_not_found(tmp_path):
     """Searching for an absent key raises IndexKeyNotFoundError."""
     # Arrange
@@ -167,6 +174,7 @@ def test_search_not_found(tmp_path):
 # ---------------------------------------------------------------------------
 # duplicate key
 # ---------------------------------------------------------------------------
+
 
 def test_duplicate_key(tmp_path):
     """Inserting an existing key raises DuplicateKeyError; tree is unchanged."""
@@ -185,6 +193,7 @@ def test_duplicate_key(tmp_path):
 # ---------------------------------------------------------------------------
 # fanout assertion
 # ---------------------------------------------------------------------------
+
 
 def test_fanout_assertion(tmp_path):
     """Fanout math produces a positive value; a full leaf encodes within page_size."""
@@ -206,6 +215,7 @@ def test_fanout_assertion(tmp_path):
 
     # assert_node_fits SHOULD raise when given a length > page_size
     from superdb.errors import StorageError
+
     with pytest.raises(StorageError):
         assert_node_fits(ps + 1, ps)
 
@@ -213,6 +223,7 @@ def test_fanout_assertion(tmp_path):
 # ---------------------------------------------------------------------------
 # TEXT key too long
 # ---------------------------------------------------------------------------
+
 
 def test_text_key_too_long(tmp_path):
     """Inserting a TEXT key longer than TEXT_KEY_CAP_DEFAULT raises IndexKeyTooLongError."""
@@ -229,8 +240,9 @@ def test_text_key_too_long(tmp_path):
 # IDX-04 MUST-HAVE: restart with INT keys
 # ---------------------------------------------------------------------------
 
+
 def test_restart_int(tmp_path):
-    """Insert enough INT keys to force >=2-level split; reopen with fresh objects; every key resolves."""
+    """Insert enough INT keys to force a 2-level split; reopen fresh; every key resolves."""
     # Arrange
     random.seed(7)
     page_size = SMALL_PAGE
@@ -259,8 +271,9 @@ def test_restart_int(tmp_path):
 # IDX-04 MUST-HAVE: restart with TEXT keys
 # ---------------------------------------------------------------------------
 
+
 def test_restart_text(tmp_path):
-    """Insert 30 TEXT keys to force >=2-level split; reopen with fresh objects; every key resolves."""
+    """Insert 30 TEXT keys to force a 2-level split; reopen fresh; every key resolves."""
     # Arrange
     random.seed(13)
     page_size = SMALL_PAGE

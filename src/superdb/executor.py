@@ -59,6 +59,7 @@ class JoinExec:
 class AggregateExec:
     group_by: str | None
     aggregates: tuple[tuple[str, str | None, str], ...]  # (func, arg_col|None, label)
+    output: tuple[str, ...]  # output labels in SELECT-list order
     child: object
 
 
@@ -104,7 +105,7 @@ _LOWER = {
     L.CreateTable: lambda n: CreateTableExec(n.table, n.columns),
     L.Insert: lambda n: InsertExec(n.table, n.values),
     L.Join: lambda n: JoinExec(n.left_key, n.right_key, lower(n.left), lower(n.right)),
-    L.Aggregate: lambda n: AggregateExec(n.group_by, n.aggregates, lower(n.child)),
+    L.Aggregate: lambda n: AggregateExec(n.group_by, n.aggregates, n.output, lower(n.child)),
 }
 
 
@@ -147,11 +148,7 @@ def _output_columns(node: PhysicalNode) -> tuple[str, ...]:
     if isinstance(node, ProjectionExec):
         return tuple(label for label, _ in node.items)
     if isinstance(node, AggregateExec):
-        cols = []
-        if node.group_by is not None:
-            cols.append(node.group_by)
-        cols.extend(label for _, _, label in node.aggregates)
-        return tuple(cols)
+        return node.output
     if isinstance(node, TableScanExec):
         return node.columns
     if isinstance(node, JoinExec):
@@ -222,13 +219,15 @@ def _aggregate_rows(node: AggregateExec, engine: StorageEngine) -> Iterator[dict
     if node.group_by is None and not order:
         order = [None]  # COUNT(*) over an empty table still yields one row
         groups[None] = []
+    agg_labels = {label for _, _, label in node.aggregates}
+    group_label = next((c for c in node.output if c not in agg_labels), None)
     for key in order:
-        out = {}
-        if node.group_by is not None:
-            out[node.group_by] = key
-        for func, arg_col, label in node.aggregates:
-            out[label] = _apply_aggregate(func, arg_col, groups[key])
-        yield out
+        computed = {
+            label: _apply_aggregate(func, arg_col, groups[key])
+            for func, arg_col, label in node.aggregates
+        }
+        # Emit columns in SELECT-list order; the group column carries the key.
+        yield {c: (key if c == group_label else computed[c]) for c in node.output}
 
 
 def _apply_aggregate(func: str, arg_col: str | None, rows: list[dict]):

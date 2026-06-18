@@ -1,4 +1,5 @@
 """CLI integration tests for the `row` noun (subprocess)."""
+
 import shutil
 import subprocess
 from pathlib import Path
@@ -17,7 +18,9 @@ def test_cli_row_insert(tmp_path: Path) -> None:
     # Arrange
     db_dir = tmp_path / "mydb"
     _run("db", "init", "--db", str(db_dir))
-    _run("table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT")
+    _run(
+        "table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT"
+    )
 
     # Act
     result = _run("row", "insert", "--db", str(db_dir), "--table", "users", "--values", "1,Alice")
@@ -32,7 +35,9 @@ def test_cli_row_scan_shows_data(tmp_path: Path) -> None:
     # Arrange
     db_dir = tmp_path / "mydb"
     _run("db", "init", "--db", str(db_dir))
-    _run("table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT")
+    _run(
+        "table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT"
+    )
     _run("row", "insert", "--db", str(db_dir), "--table", "users", "--values", "1,Alice")
 
     # Act
@@ -48,7 +53,9 @@ def test_cli_row_get(tmp_path: Path) -> None:
     # Arrange
     db_dir = tmp_path / "mydb"
     _run("db", "init", "--db", str(db_dir))
-    _run("table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT")
+    _run(
+        "table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT"
+    )
     insert_result = _run(
         "row", "insert", "--db", str(db_dir), "--table", "users", "--values", "1,Alice"
     )
@@ -67,7 +74,9 @@ def test_cli_row_update(tmp_path: Path) -> None:
     # Arrange
     db_dir = tmp_path / "mydb"
     _run("db", "init", "--db", str(db_dir))
-    _run("table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT")
+    _run(
+        "table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT"
+    )
     insert_result = _run(
         "row", "insert", "--db", str(db_dir), "--table", "users", "--values", "1,Alice"
     )
@@ -88,7 +97,9 @@ def test_cli_row_delete(tmp_path: Path) -> None:
     # Arrange
     db_dir = tmp_path / "mydb"
     _run("db", "init", "--db", str(db_dir))
-    _run("table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT")
+    _run(
+        "table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT"
+    )
     insert_result = _run(
         "row", "insert", "--db", str(db_dir), "--table", "users", "--values", "1,Alice"
     )
@@ -107,7 +118,9 @@ def test_cli_row_scan_empty(tmp_path: Path) -> None:
     # Arrange
     db_dir = tmp_path / "mydb"
     _run("db", "init", "--db", str(db_dir))
-    _run("table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT")
+    _run(
+        "table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT"
+    )
 
     # Act
     result = _run("row", "scan", "--db", str(db_dir), "--table", "users")
@@ -121,7 +134,9 @@ def test_cli_row_bad_values(tmp_path: Path) -> None:
     # Arrange
     db_dir = tmp_path / "mydb"
     _run("db", "init", "--db", str(db_dir))
-    _run("table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT")
+    _run(
+        "table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT"
+    )
 
     # Act — INT column receives a non-integer value
     result = _run(
@@ -137,7 +152,9 @@ def test_cli_row_bad_rid(tmp_path: Path) -> None:
     # Arrange
     db_dir = tmp_path / "mydb"
     _run("db", "init", "--db", str(db_dir))
-    _run("table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT")
+    _run(
+        "table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT"
+    )
 
     # Act
     result = _run("row", "get", "--db", str(db_dir), "--table", "users", "--rid", "xyz")
@@ -151,7 +168,9 @@ def test_cli_row_hexdump(tmp_path: Path) -> None:
     # Arrange
     db_dir = tmp_path / "mydb"
     _run("db", "init", "--db", str(db_dir))
-    _run("table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT")
+    _run(
+        "table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,name:TEXT"
+    )
     insert_result = _run(
         "row", "insert", "--db", str(db_dir), "--table", "users", "--values", "1,Alice"
     )

@@ -1,4 +1,5 @@
 """Tests for storage/page.py — slotted-page byte layout (PHYS-01, PHYS-03, PHYS-04)."""
+
 import pytest
 
 from superdb.constants import FORMAT_VERSION
@@ -28,7 +29,7 @@ def test_can_fit_accounts_for_slot_entry():
 def test_slot_directory_grows():
     # Arrange
     p = Page.new(4096)
-    r1 = b"hello"   # 5 bytes
+    r1 = b"hello"  # 5 bytes
     r2 = b"world!"  # 6 bytes
     # Act
     p.insert_tuple(r1)
@@ -115,7 +116,7 @@ def test_malformed_slot_bounds_raises_storageerror():
     buf = bytearray(256)
     mv = memoryview(buf)
     mv[0:HEADER_SIZE] = PAGE_HDR.pack(FORMAT_VERSION, 1, HEADER_SIZE + SLOT_ENTRY_SIZE, 200)
-    mv[HEADER_SIZE:HEADER_SIZE + SLOT_ENTRY_SIZE] = SLOT.pack(9000, 10, 1)
+    mv[HEADER_SIZE : HEADER_SIZE + SLOT_ENTRY_SIZE] = SLOT.pack(9000, 10, 1)
     with pytest.raises(StorageError):
         Page.from_bytes(bytes(buf), 256).get_tuple(0)
 

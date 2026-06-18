@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from superdb.constants import CATALOG_FILE, DEFAULT_PAGE_SIZE, FORMAT_VERSION
-from superdb.durability import write_json_atomic
+from superdb.durability import write_file_atomic, write_json_atomic
 from superdb.errors import StorageError
 from superdb.heap_file import HeapFile
 from superdb.page import Page
@@ -133,9 +133,11 @@ def create_table(
     )
     cat["tables"].append(_table_to_dict(meta))
     cat["next_table_id"] = table_id + 1
+    # Heap first, durably: a catalog entry pointing at a missing heap is
+    # unrecoverable, but an orphan .tbl with no catalog entry is harmlessly
+    # truncated on the next create. So commit the heap before the catalog.
+    write_file_atomic(db_dir / f"{name}.tbl", b"")
     _save_catalog(db_dir, cat)
-    heap = db_dir / f"{name}.tbl"
-    heap.write_bytes(b"")  # create empty heap file
     return meta
 
 

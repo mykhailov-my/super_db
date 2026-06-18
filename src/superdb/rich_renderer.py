@@ -34,7 +34,9 @@ class RichRenderer:
         self._console.print(msg, markup=False)
 
     def render_error(self, msg: str) -> None:
-        self._err_console.print(f"[red]Error:[/red] {msg}")
+        # markup=False: the message may contain brackets (e.g. a bad column spec
+        # "id[/]INT") that must not be parsed as Rich tags and crash the error path.
+        self._err_console.print("Error:", msg, style="red", markup=False)
 
     def render_result(self, columns: Sequence[str], rows: Sequence[dict]) -> None:
         tbl = Table(show_header=True, border_style=None, box=rich_box.SIMPLE_HEAD)
@@ -42,7 +44,7 @@ class RichRenderer:
             tbl.add_column(col)
         for row in rows:
             tbl.add_row(*(
-                Text("NULL", style="italic dim") if row[c] is None else str(row[c])
+                Text("NULL", style="italic dim") if row[c] is None else Text(str(row[c]))
                 for c in columns
             ))
         self._console.print(tbl)
@@ -64,7 +66,7 @@ class RichRenderer:
             cells: list = [rid_str]
             for col in meta.columns:
                 v = record[col.name]
-                cells.append(Text("NULL", style="italic dim") if v is None else str(v))
+                cells.append(Text("NULL", style="italic dim") if v is None else Text(str(v)))
             tbl.add_row(*cells)
         self._console.print(tbl)
 

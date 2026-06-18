@@ -1,4 +1,5 @@
 """Tests for the hardened write_file_atomic / write_json_atomic (CAT-08)."""
+
 import json
 import tempfile as _tempfile
 
@@ -70,6 +71,7 @@ def test_temp_in_same_dir_supports_replace(tmp_path, monkeypatch):
         return real_mkstemp(*args, **kwargs)
 
     import superdb.durability as _dur
+
     monkeypatch.setattr(_dur.tempfile, "mkstemp", capturing_mkstemp)
 
     target = tmp_path / "out.bin"

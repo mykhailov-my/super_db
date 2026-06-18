@@ -5,7 +5,6 @@ RichRenderer: smoke-only (renders without raising).
 No golden ANSI string assertions on RichRenderer output.
 """
 
-
 from superdb.plain_renderer import PlainRenderer
 from superdb.rich_renderer import RichRenderer
 from superdb.schema import Column, ColumnType, StorageTrack, TableMeta
@@ -13,6 +12,7 @@ from superdb.schema import Column, ColumnType, StorageTrack, TableMeta
 # ---------------------------------------------------------------------------
 # Helper: build a minimal TableMeta without a real database
 # ---------------------------------------------------------------------------
+
 
 def _make_meta() -> TableMeta:
     return TableMeta(
@@ -31,6 +31,7 @@ def _make_meta() -> TableMeta:
 # ---------------------------------------------------------------------------
 # PlainRenderer assertion tests
 # ---------------------------------------------------------------------------
+
 
 def test_render_rows_plain(capsys) -> None:
     # Arrange
@@ -138,6 +139,7 @@ def test_render_btree_internal_plain(capsys) -> None:
 # ---------------------------------------------------------------------------
 # RichRenderer smoke tests — just must not raise
 # ---------------------------------------------------------------------------
+
 
 def test_render_rows_rich_no_error() -> None:
 

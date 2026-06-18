@@ -1,4 +1,5 @@
 """End-to-end execution: SQL text → result, through the real storage engine."""
+
 from pathlib import Path
 
 import pytest
@@ -87,9 +88,7 @@ def test_limit_zero_returns_empty(users: Path):
 
 
 def test_full_select_pipeline(users: Path):
-    result = run(
-        "SELECT id, name FROM users WHERE age >= 18 ORDER BY name DESC LIMIT 1", users
-    )
+    result = run("SELECT id, name FROM users WHERE age >= 18 ORDER BY name DESC LIMIT 1", users)
 
     assert result.columns == ("id", "name")
     assert result.rows == [{"id": 3, "name": "Carol"}]

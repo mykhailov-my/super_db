@@ -1,4 +1,5 @@
 """CLI integration tests for the `page` and `index` nouns (subprocess)."""
+
 import shutil
 import subprocess
 from pathlib import Path

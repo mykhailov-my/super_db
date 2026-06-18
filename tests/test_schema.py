@@ -1,4 +1,5 @@
-"""Tests for catalog/schema.py (Column, TableMeta, ColumnType, StorageTrack) and storage/rid.py (RID)."""
+"""Tests for schema.py (Column, TableMeta, ColumnType, StorageTrack) and rid.py (RID)."""
+
 import dataclasses
 
 import pytest
@@ -40,8 +41,18 @@ def test_tablemeta_has_all_cat01_fields():
         format_version=1,
     )
 
+    assert meta.name == "users"
+    assert meta.columns == (col_a, col_b)
+
     field_names = {f.name for f in dataclasses.fields(TableMeta)}
-    assert field_names == {"table_id", "name", "columns", "storage_track", "page_size", "format_version"}
+    assert field_names == {
+        "table_id",
+        "name",
+        "columns",
+        "storage_track",
+        "page_size",
+        "format_version",
+    }
 
 
 def test_tablemeta_columns_is_tuple():

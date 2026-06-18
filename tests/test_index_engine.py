@@ -7,6 +7,7 @@ Tests verify:
   - index persists across fresh objects (IDX-04)
   - unknown keycol raises StorageError
 """
+
 from pathlib import Path
 
 import pytest
@@ -20,6 +21,7 @@ from superdb.rid import RID
 # ---------------------------------------------------------------------------
 # IDX-01: build_index populates B+Tree from heap rows
 # ---------------------------------------------------------------------------
+
 
 def test_build_over_heap(db_dir: Path) -> None:
     """build_index scans an existing heap and populates the B+Tree (IDX-01).
@@ -53,6 +55,7 @@ def test_build_over_heap(db_dir: Path) -> None:
 # IDX-02: insert after build_index maintains the index
 # ---------------------------------------------------------------------------
 
+
 def test_insert_maintains_index(db_dir: Path) -> None:
     """A new insert after build_index updates the index (IDX-02).
 
@@ -79,6 +82,7 @@ def test_insert_maintains_index(db_dir: Path) -> None:
 # IDX-03: search RID resolves via get to the original record
 # ---------------------------------------------------------------------------
 
+
 def test_index_search_resolves_via_get(db_dir: Path) -> None:
     """search returns a RID that engine.get resolves to the original record (IDX-03)."""
     # Arrange
@@ -99,6 +103,7 @@ def test_index_search_resolves_via_get(db_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 # IDX-04: index persists across fresh BPlusTree object (and fresh engine)
 # ---------------------------------------------------------------------------
+
 
 def test_index_persists_after_restart(db_dir: Path) -> None:
     """Index file is durable: a fresh BPlusTree opened over the .idx file
@@ -139,6 +144,7 @@ def test_index_persists_after_restart(db_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 # Unknown keycol raises StorageError
 # ---------------------------------------------------------------------------
+
 
 def test_build_unknown_keycol_raises(db_dir: Path) -> None:
     """build_index raises StorageError when keycol is not a column of the table."""

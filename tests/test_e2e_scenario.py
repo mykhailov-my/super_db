@@ -3,6 +3,7 @@
 Proves that the full lifecycle (create → insert → get → scan → update → delete → restart)
 works correctly, with a REAL restart simulated by constructing a fresh StorageEngine.
 """
+
 from pathlib import Path
 
 import pytest

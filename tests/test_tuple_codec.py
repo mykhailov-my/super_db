@@ -1,4 +1,5 @@
 """Tests for storage/tuple_codec.py: golden-byte, round-trip, FieldSpan, malformed-buffer."""
+
 import pytest
 
 from superdb.errors import StorageError

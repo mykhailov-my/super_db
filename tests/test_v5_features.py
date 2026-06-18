@@ -1,4 +1,5 @@
 """v5.0: INNER JOIN, aggregation + GROUP BY, scalar function — end to end."""
+
 from pathlib import Path
 
 import pytest
@@ -152,3 +153,17 @@ def test_aggregate_honors_order_by_and_limit(shop: Path):
 def test_aggregate_order_by_unknown_column_errors(shop: Path):
     with pytest.raises(LogicalError, match="not in the result"):
         run("SELECT user_id, COUNT(*) FROM orders GROUP BY user_id ORDER BY total", shop)
+
+
+def test_aggregate_preserves_select_list_column_order(shop: Path):
+    # Group column written AFTER the aggregate must stay second, not be yanked first.
+    result = run("SELECT SUM(total), user_id FROM orders GROUP BY user_id", shop)
+    assert result.columns == ("SUM(total)", "user_id")
+    # ...and the control: written first stays first.
+    control = run("SELECT user_id, SUM(total) FROM orders GROUP BY user_id", shop)
+    assert control.columns == ("user_id", "SUM(total)")
+
+
+def test_duplicate_output_label_rejected(shop: Path):
+    with pytest.raises(LogicalError, match="duplicate output column"):
+        run("SELECT id, id FROM users", shop)

@@ -275,23 +275,28 @@ def test_corrupt_catalog_bad_table_name_rejected(tmp_path: Path) -> None:
     cat = {
         "version": 1,
         "next_table_id": 2,
-        "tables": [{
-            "table_id": 1,
-            "name": "../evil",
-            "columns": [{"name": "id", "type": "INT", "nullable": True}],
-            "storage_track": "row",
-            "page_size": 4096,
-            "format_version": 1,
-        }],
+        "tables": [
+            {
+                "table_id": 1,
+                "name": "../evil",
+                "columns": [{"name": "id", "type": "INT", "nullable": True}],
+                "storage_track": "row",
+                "page_size": 4096,
+                "format_version": 1,
+            }
+        ],
     }
     (tmp_path / "catalog.json").write_text(json.dumps(cat))
     with pytest.raises(ValueError, match="invalid table name"):
         describe_table(tmp_path, "../evil")
 
 
-def test_create_table_failed_save_leaves_no_heap(db_dir: Path, monkeypatch) -> None:
-    """If catalog persistence fails, no orphan .tbl heap is left behind — the
-    catalog save is the commit point (heap is created only afterward)."""
+def test_create_table_failed_save_leaves_no_catalog_entry(db_dir: Path, monkeypatch) -> None:
+    """The catalog save is the commit point. The heap is created (durably) first,
+    so a failed save may leave an orphan .tbl — but that is harmless: the table is
+    NOT in the catalog, and a later create truncates the orphan clean. The reverse
+    (a catalog entry pointing at a missing heap) would be unrecoverable, so we
+    commit the heap before the catalog."""
     from superdb import catalog as catalog_mod
 
     init_db(db_dir)
@@ -302,4 +307,11 @@ def test_create_table_failed_save_leaves_no_heap(db_dir: Path, monkeypatch) -> N
     monkeypatch.setattr(catalog_mod, "_save_catalog", boom)
     with pytest.raises(OSError):
         create_table(db_dir, "t", [("id", "INT", False)])
-    assert not (db_dir / "t.tbl").exists()
+
+    # Failed save → table absent from catalog (no dangling entry).
+    assert all(t.name != "t" for t in list_tables(db_dir))
+    # An orphan heap, if any, is harmlessly truncated by a successful recreate.
+    monkeypatch.undo()
+    create_table(db_dir, "t", [("id", "INT", False)])
+    assert (db_dir / "t.tbl").exists()
+    assert (db_dir / "t.tbl").stat().st_size == 0

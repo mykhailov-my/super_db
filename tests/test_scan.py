@@ -1,4 +1,5 @@
 """Tests for catalog.scan() — sequential heap scan (SCAN-01, SCAN-02, SCAN-03)."""
+
 import os
 from pathlib import Path
 
@@ -11,10 +12,7 @@ from superdb.page import Page
 
 
 def _as_set(rows):
-    return {
-        (r.rid.page_id, r.rid.slot_id, tuple(sorted(r.values.items())))
-        for r in rows
-    }
+    return {(r.rid.page_id, r.rid.slot_id, tuple(sorted(r.values.items()))) for r in rows}
 
 
 def test_scan_empty_heap(db_dir: Path) -> None:
@@ -43,7 +41,7 @@ def test_scan_live_only(db_dir: Path) -> None:
     # Tombstone rid_b directly at the page level (no Phase 6 delete yet)
     ps = handle.meta.page_size
     path = handle.heap_path
-    raw_page = path.read_bytes()[rid_b.page_id * ps:(rid_b.page_id + 1) * ps]
+    raw_page = path.read_bytes()[rid_b.page_id * ps : (rid_b.page_id + 1) * ps]
     page = Page.from_bytes(raw_page, ps)
     page.tombstone_slot(rid_b.slot_id)
     fd = os.open(str(path), os.O_RDWR)
@@ -85,8 +83,7 @@ def test_scan_multi_page(db_dir: Path) -> None:
 
     # Assert — all inserted rows returned, unordered comparison
     expected = {
-        (rid.page_id, rid.slot_id, tuple(sorted(vals.items())))
-        for rid, vals in inserted_rids
+        (rid.page_id, rid.slot_id, tuple(sorted(vals.items()))) for rid, vals in inserted_rids
     }
     assert _as_set(rows) == expected
 

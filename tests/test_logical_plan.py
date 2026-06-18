@@ -11,7 +11,9 @@ from superdb.sql_parser import parse
 
 def _users(db_dir: Path) -> None:
     init_db(db_dir)
-    create_table(db_dir, "users", [("id", "INT", True), ("name", "TEXT", True), ("age", "INT", True)])
+    create_table(
+        db_dir, "users", [("id", "INT", True), ("name", "TEXT", True), ("age", "INT", True)]
+    )
 
 
 def plan(sql: str, db_dir: Path):

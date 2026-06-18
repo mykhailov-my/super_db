@@ -1,4 +1,5 @@
 """Tests for storage/heap_file.py — HeapFile insert/get (WRITE-01, WRITE-02, WRITE-03)."""
+
 import os
 
 import pytest
@@ -49,7 +50,12 @@ def test_insert_allocates_new_page(tmp_path):
     record = b"x" * 1
     pages_before = None
     while True:
-        test_page = Page.from_bytes(path.read_bytes()[-page_size:] if path.stat().st_size > 0 else Page.new(page_size).to_bytes(), page_size)
+        test_page = Page.from_bytes(
+            path.read_bytes()[-page_size:]
+            if path.stat().st_size > 0
+            else Page.new(page_size).to_bytes(),
+            page_size,
+        )
         if not test_page.can_fit(len(record)):
             pages_before = path.stat().st_size // page_size
             break
@@ -122,7 +128,7 @@ def test_get_tombstoned_slot(tmp_path):
     record = b"will-be-tombstoned"
     rid = hf.insert(record)
     # Load page, tombstone slot 0, write raw bytes back
-    raw_page = path.read_bytes()[rid.page_id * page_size:(rid.page_id + 1) * page_size]
+    raw_page = path.read_bytes()[rid.page_id * page_size : (rid.page_id + 1) * page_size]
     page = Page.from_bytes(raw_page, page_size)
     page.tombstone_slot(rid.slot_id)
     # Rewrite the page to disk
@@ -138,6 +144,7 @@ def test_get_tombstoned_slot(tmp_path):
 
 
 # --- delete tests ---
+
 
 def test_delete_tombstones_slot(tmp_path):
     # Arrange
@@ -188,6 +195,7 @@ def test_delete_out_of_range_slot_raises(tmp_path):
 
 
 # --- update tests ---
+
 
 def test_update_inplace_same_rid(tmp_path):
     # Arrange: same byte length -> in-place, RID unchanged

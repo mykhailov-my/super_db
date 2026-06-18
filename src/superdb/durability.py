@@ -28,7 +28,9 @@ def write_file_atomic(path: Path, data: bytes) -> None:
     fd, tmp = tempfile.mkstemp(dir=parent, suffix=".tmp")
     try:
         try:
-            os.write(fd, data)
+            n = os.write(fd, data)
+            if n != len(data):
+                raise StorageError(f"short write: wrote {n}/{len(data)} bytes")
             os.fsync(fd)
         finally:
             os.close(fd)

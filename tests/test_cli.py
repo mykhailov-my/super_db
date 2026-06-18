@@ -3,6 +3,7 @@
 The console script is resolved via shutil.which("db-cli") so tests run against
 the venv-installed binary, the same binary a user would call.
 """
+
 import shutil
 import subprocess
 from pathlib import Path
@@ -103,11 +104,20 @@ def test_sql_parse_error_exits_nonzero_to_stderr() -> None:
 def test_sql_plan_prints_logical_tree(tmp_path: Path) -> None:
     db_dir = tmp_path / "db"
     _run("db", "init", "--db", str(db_dir))
-    _run("table", "create", "--db", str(db_dir), "--table", "users",
-         "--columns", "id:INT,name:TEXT,age:INT")
+    _run(
+        "table",
+        "create",
+        "--db",
+        str(db_dir),
+        "--table",
+        "users",
+        "--columns",
+        "id:INT,name:TEXT,age:INT",
+    )
 
-    result = _run("sql", "plan", "--db", str(db_dir),
-                  "--query", "SELECT id FROM users WHERE age > 18 LIMIT 5")
+    result = _run(
+        "sql", "plan", "--db", str(db_dir), "--query", "SELECT id FROM users WHERE age > 18 LIMIT 5"
+    )
 
     assert result.returncode == 0
     assert "Limit 5" in result.stdout
@@ -129,15 +139,22 @@ def test_sql_plan_unknown_table_exits_nonzero(tmp_path: Path) -> None:
 def test_sql_query_end_to_end(tmp_path: Path) -> None:
     db_dir = tmp_path / "db"
     _run("db", "init", "--db", str(db_dir))
-    _run("sql", "query", "--db", str(db_dir),
-         "--query", "CREATE TABLE users (id INT, name TEXT, age INT)")
-    _run("sql", "query", "--db", str(db_dir),
-         "--query", "INSERT INTO users VALUES (1, 'Alice', 30)")
-    _run("sql", "query", "--db", str(db_dir),
-         "--query", "INSERT INTO users VALUES (2, 'Bob', 17)")
+    _run(
+        "sql",
+        "query",
+        "--db",
+        str(db_dir),
+        "--query",
+        "CREATE TABLE users (id INT, name TEXT, age INT)",
+    )
+    _run(
+        "sql", "query", "--db", str(db_dir), "--query", "INSERT INTO users VALUES (1, 'Alice', 30)"
+    )
+    _run("sql", "query", "--db", str(db_dir), "--query", "INSERT INTO users VALUES (2, 'Bob', 17)")
 
-    result = _run("sql", "query", "--db", str(db_dir),
-                  "--query", "SELECT name FROM users WHERE age >= 18")
+    result = _run(
+        "sql", "query", "--db", str(db_dir), "--query", "SELECT name FROM users WHERE age >= 18"
+    )
 
     assert result.returncode == 0
     assert "Alice" in result.stdout
@@ -160,11 +177,11 @@ def test_sql_query_persists_across_processes(tmp_path: Path) -> None:
 def test_sql_explain_shows_both_plans(tmp_path: Path) -> None:
     db_dir = tmp_path / "db"
     _run("db", "init", "--db", str(db_dir))
-    _run("table", "create", "--db", str(db_dir), "--table", "users",
-         "--columns", "id:INT,age:INT")
+    _run("table", "create", "--db", str(db_dir), "--table", "users", "--columns", "id:INT,age:INT")
 
-    result = _run("sql", "explain", "--db", str(db_dir),
-                  "--query", "SELECT id FROM users WHERE age > 18")
+    result = _run(
+        "sql", "explain", "--db", str(db_dir), "--query", "SELECT id FROM users WHERE age > 18"
+    )
 
     assert result.returncode == 0
     assert "Logical Plan:" in result.stdout
@@ -176,21 +193,36 @@ def test_sql_explain_shows_both_plans(tmp_path: Path) -> None:
 def test_sql_query_join_and_aggregate(tmp_path: Path) -> None:
     db_dir = tmp_path / "db"
     _run("db", "init", "--db", str(db_dir))
-    for ddl in ["CREATE TABLE users (id INT, name TEXT)",
-                "CREATE TABLE orders (id INT, user_id INT, total INT)"]:
+    for ddl in [
+        "CREATE TABLE users (id INT, name TEXT)",
+        "CREATE TABLE orders (id INT, user_id INT, total INT)",
+    ]:
         _run("sql", "query", "--db", str(db_dir), "--query", ddl)
-    for dml in ["INSERT INTO users VALUES (1, 'Alice')",
-                "INSERT INTO orders VALUES (1, 1, 100)",
-                "INSERT INTO orders VALUES (2, 1, 50)"]:
+    for dml in [
+        "INSERT INTO users VALUES (1, 'Alice')",
+        "INSERT INTO orders VALUES (1, 1, 100)",
+        "INSERT INTO orders VALUES (2, 1, 50)",
+    ]:
         _run("sql", "query", "--db", str(db_dir), "--query", dml)
 
-    join = _run("sql", "query", "--db", str(db_dir),
-                "--query", "SELECT users.name, orders.total FROM users "
-                           "JOIN orders ON users.id = orders.user_id")
+    join = _run(
+        "sql",
+        "query",
+        "--db",
+        str(db_dir),
+        "--query",
+        "SELECT users.name, orders.total FROM users JOIN orders ON users.id = orders.user_id",
+    )
     assert join.returncode == 0
     assert "Alice" in join.stdout and "100" in join.stdout
 
-    agg = _run("sql", "query", "--db", str(db_dir),
-               "--query", "SELECT user_id, SUM(total) FROM orders GROUP BY user_id")
+    agg = _run(
+        "sql",
+        "query",
+        "--db",
+        str(db_dir),
+        "--query",
+        "SELECT user_id, SUM(total) FROM orders GROUP BY user_id",
+    )
     assert agg.returncode == 0
     assert "150" in agg.stdout
