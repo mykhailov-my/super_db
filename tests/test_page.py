@@ -4,8 +4,8 @@ import pytest
 
 from superdb.constants import FORMAT_VERSION
 from superdb.errors import PageFullError, StorageError
-from superdb.page import Page
-from superdb.page_layout import HEADER_SIZE, PAGE_HDR, SLOT, SLOT_ENTRY_SIZE
+from superdb.storage.page import Page
+from superdb.storage.page_layout import HEADER_SIZE, PAGE_HDR, SLOT, SLOT_ENTRY_SIZE
 
 
 def test_header_roundtrip():

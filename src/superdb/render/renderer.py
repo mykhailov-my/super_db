@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from typing import Protocol
 
-from superdb.schema import TableMeta
+from superdb.catalog.schema import TableMeta
 
 
 class Renderer(Protocol):

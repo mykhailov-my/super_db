@@ -24,7 +24,7 @@ from pathlib import Path
 
 from superdb.durability import fsync_dir, write_page
 from superdb.errors import DuplicateKeyError, IndexKeyNotFoundError, StorageError
-from superdb.node_layout import (
+from superdb.index.node_layout import (
     KEY_TYPE_INT,
     NULL_PAGE_ID,
     TEXT_KEY_CAP_DEFAULT,
@@ -45,7 +45,7 @@ from superdb.node_layout import (
     text_internal_max_keys,
     text_leaf_max,
 )
-from superdb.rid import RID
+from superdb.storage.rid import RID
 
 
 class BPlusTree:

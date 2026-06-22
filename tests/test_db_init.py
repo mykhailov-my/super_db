@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from superdb.database import init_db, open_db
+from superdb.catalog.database import init_db, open_db
 from superdb.errors import InitError, OpenError
 
 

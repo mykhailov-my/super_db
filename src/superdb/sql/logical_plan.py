@@ -3,13 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from .catalog import describe_table
-from .errors import LogicalError
-from .schema import ColumnType, TableMeta
-from .sql_ast import BoolOp, ColumnRef, Comparison, FuncCall, Statement
-from .sql_ast import CreateTable as CreateTableAST
-from .sql_ast import Insert as InsertAST
-from .sql_ast import Select as SelectAST
+from superdb.catalog.catalog import describe_table
+from superdb.catalog.schema import ColumnType, TableMeta
+from superdb.errors import LogicalError
+from superdb.sql.sql_ast import BoolOp, ColumnRef, Comparison, FuncCall, Statement
+from superdb.sql.sql_ast import CreateTable as CreateTableAST
+from superdb.sql.sql_ast import Insert as InsertAST
+from superdb.sql.sql_ast import Select as SelectAST
 
 # AST → Logical Plan (HW Stage 4). Builds a tree of logical operators (not an
 # AST copy) and binds it against the Catalog: table/column existence, INSERT

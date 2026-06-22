@@ -6,9 +6,9 @@ import pytest
 
 from superdb.constants import DEFAULT_PAGE_SIZE
 from superdb.errors import PageFullError, RecordNotFoundError
-from superdb.heap_file import HeapFile
-from superdb.page import Page
-from superdb.rid import RID
+from superdb.storage.heap_file import HeapFile
+from superdb.storage.page import Page
+from superdb.storage.rid import RID
 
 
 def _new_heap(tmp_path, page_size=DEFAULT_PAGE_SIZE):

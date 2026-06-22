@@ -5,16 +5,16 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from superdb.catalog.schema import Column, ColumnType, StorageTrack, TableMeta
 from superdb.constants import CATALOG_FILE, DEFAULT_PAGE_SIZE, FORMAT_VERSION
 from superdb.durability import write_file_atomic, write_json_atomic
 from superdb.errors import StorageError
-from superdb.heap_file import HeapFile
-from superdb.page import Page
-from superdb.page_layout import HEADER_SIZE, SLOT_ENTRY_SIZE
-from superdb.rid import RID
-from superdb.row import Row
-from superdb.schema import Column, ColumnType, StorageTrack, TableMeta
-from superdb.tuple_codec import decode_tuple, encode_tuple
+from superdb.storage.heap_file import HeapFile
+from superdb.storage.page import Page
+from superdb.storage.page_layout import HEADER_SIZE, SLOT_ENTRY_SIZE
+from superdb.storage.rid import RID
+from superdb.storage.row import Row
+from superdb.storage.tuple_codec import decode_tuple, encode_tuple
 
 _IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _VALID_TYPES = frozenset(t.value for t in ColumnType)

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from superdb.catalog import (
+from superdb.catalog.catalog import (
     TableHandle,
     create_table,
     delete,
@@ -15,9 +15,9 @@ from superdb.catalog import (
     open_table,
     update,
 )
-from superdb.database import init_db
+from superdb.catalog.database import init_db
 from superdb.errors import RecordNotFoundError, StorageError
-from superdb.rid import RID
+from superdb.storage.rid import RID
 
 
 def test_validate_schema(db_dir: Path) -> None:
@@ -297,7 +297,7 @@ def test_create_table_failed_save_leaves_no_catalog_entry(db_dir: Path, monkeypa
     NOT in the catalog, and a later create truncates the orphan clean. The reverse
     (a catalog entry pointing at a missing heap) would be unrecoverable, so we
     commit the heap before the catalog."""
-    from superdb import catalog as catalog_mod
+    from superdb.catalog import catalog as catalog_mod
 
     init_db(db_dir)
 

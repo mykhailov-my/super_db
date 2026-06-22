@@ -5,9 +5,9 @@ RichRenderer: smoke-only (renders without raising).
 No golden ANSI string assertions on RichRenderer output.
 """
 
-from superdb.plain_renderer import PlainRenderer
-from superdb.rich_renderer import RichRenderer
-from superdb.schema import Column, ColumnType, StorageTrack, TableMeta
+from superdb.catalog.schema import Column, ColumnType, StorageTrack, TableMeta
+from superdb.render.plain_renderer import PlainRenderer
+from superdb.render.rich_renderer import RichRenderer
 
 # ---------------------------------------------------------------------------
 # Helper: build a minimal TableMeta without a real database

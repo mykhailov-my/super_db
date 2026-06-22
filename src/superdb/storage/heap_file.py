@@ -10,8 +10,8 @@ from pathlib import Path
 
 from superdb.durability import write_page
 from superdb.errors import PageFullError, RecordNotFoundError, StorageError
-from superdb.page import Page
-from superdb.rid import RID
+from superdb.storage.page import Page
+from superdb.storage.rid import RID
 
 
 class HeapFile:

@@ -13,7 +13,7 @@ import struct
 from dataclasses import dataclass
 
 from superdb.errors import IndexKeyTooLongError, StorageError
-from superdb.rid import RID
+from superdb.storage.rid import RID
 
 # ---------------------------------------------------------------------------
 # Node type and key type sentinels

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from .errors import LogicalError
-from .sql_ast import BoolOp, ColumnRef, Comparison, FuncCall, Literal
+from superdb.errors import LogicalError
+from superdb.sql.sql_ast import BoolOp, ColumnRef, Comparison, FuncCall, Literal
 
 # Evaluate a WHERE expression (sql_ast.Expr) against one row. A row is a plain
 # dict[column -> value]; the key is the column name, and a later milestone may

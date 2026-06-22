@@ -1,12 +1,12 @@
 import argparse
 
-from superdb.catalog import (
+from superdb.catalog.catalog import (
     create_table,
     describe_table,
     drop_table,
     list_tables,
 )
-from superdb.cli_common import resolve_db_dir as _resolve_db
+from superdb.cli.cli_common import resolve_db_dir as _resolve_db
 from superdb.constants import DEFAULT_PAGE_SIZE
 
 

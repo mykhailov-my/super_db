@@ -3,10 +3,11 @@ from __future__ import annotations
 from collections.abc import Iterator
 from dataclasses import dataclass
 
+from superdb.errors import LogicalError
+from superdb.sql.evaluate import evaluate, matches
+from superdb.storage.engine import StorageEngine
+
 from . import logical_plan as L
-from .engine import StorageEngine
-from .errors import LogicalError
-from .evaluate import evaluate, matches
 
 # Physical plan + execution (HW Stage 5). Each physical operator is a node that
 # knows how to produce rows. SELECT operators pull rows from their child as a

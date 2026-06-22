@@ -1,10 +1,10 @@
 import argparse
 import os
 
-from superdb.catalog import open_table
-from superdb.cli_common import resolve_db_dir as _resolve_db
-from superdb.page import Page
-from superdb.page_layout import HEADER_SIZE, SLOT_FLAG_LIVE
+from superdb.catalog.catalog import open_table
+from superdb.cli.cli_common import resolve_db_dir as _resolve_db
+from superdb.storage.page import Page
+from superdb.storage.page_layout import HEADER_SIZE, SLOT_FLAG_LIVE
 
 
 def add_page_parser(verbs) -> None:

@@ -4,15 +4,15 @@ import sys
 from loguru import logger
 
 from superdb import __version__
-from superdb.cli_db import add_init_parser, run_init
-from superdb.cli_index import add_index_parser, run_index
-from superdb.cli_page import add_page_parser, run_page
-from superdb.cli_row import add_row_parser, run_row
-from superdb.cli_sql import add_sql_parser, run_sql
-from superdb.cli_table import add_table_parser, run_table
+from superdb.cli.cli_db import add_init_parser, run_init
+from superdb.cli.cli_index import add_index_parser, run_index
+from superdb.cli.cli_page import add_page_parser, run_page
+from superdb.cli.cli_row import add_row_parser, run_row
+from superdb.cli.cli_sql import add_sql_parser, run_sql
+from superdb.cli.cli_table import add_table_parser, run_table
 from superdb.errors import SuperDBError
 from superdb.log import setup_logging
-from superdb.rich_renderer import RichRenderer
+from superdb.render.rich_renderer import RichRenderer
 
 
 def build_parser() -> argparse.ArgumentParser:

@@ -1,10 +1,9 @@
 import argparse
 
-from superdb import executor as ex
-from superdb import logical_plan as lp
-from superdb.cli_common import resolve_db_dir as _resolve_db
-from superdb.engine import StorageEngine
-from superdb.sql_ast import (
+from superdb.cli.cli_common import resolve_db_dir as _resolve_db
+from superdb.sql import executor as ex
+from superdb.sql import logical_plan as lp
+from superdb.sql.sql_ast import (
     BoolOp,
     ColumnRef,
     Comparison,
@@ -14,7 +13,8 @@ from superdb.sql_ast import (
     Literal,
     Select,
 )
-from superdb.sql_parser import parse
+from superdb.sql.sql_parser import parse
+from superdb.storage.engine import StorageEngine
 
 
 def add_sql_parser(verbs) -> None:

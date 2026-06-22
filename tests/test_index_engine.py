@@ -12,11 +12,11 @@ from pathlib import Path
 
 import pytest
 
-from superdb.bplustree import BPlusTree
-from superdb.database import init_db
-from superdb.engine import StorageEngine
+from superdb.catalog.database import init_db
 from superdb.errors import DuplicateKeyError, StorageError
-from superdb.rid import RID
+from superdb.index.bplustree import BPlusTree
+from superdb.storage.engine import StorageEngine
+from superdb.storage.rid import RID
 
 # ---------------------------------------------------------------------------
 # IDX-01: build_index populates B+Tree from heap rows

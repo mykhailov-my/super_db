@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from superdb.constants import FORMAT_VERSION
 from superdb.errors import PageFullError, StorageError
-from superdb.page_layout import HEADER_SIZE, PAGE_HDR, SLOT, SLOT_ENTRY_SIZE, SLOT_FLAG_LIVE
+from superdb.storage.page_layout import HEADER_SIZE, PAGE_HDR, SLOT, SLOT_ENTRY_SIZE, SLOT_FLAG_LIVE
 
 
 class Page:

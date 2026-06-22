@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from superdb.plain_renderer import PlainRenderer
-from superdb.renderer import Renderer
+from superdb.render.plain_renderer import PlainRenderer
+from superdb.render.renderer import Renderer
 
 # The only module permitted to import rich — the renderer firewall seam.
 RICH_ALLOWED = {"rich_renderer.py"}

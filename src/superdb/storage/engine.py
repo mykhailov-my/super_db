@@ -14,17 +14,17 @@ The index is a sibling of HeapFile — heap_file.py never imports the index.
 """
 from pathlib import Path
 
-from superdb.bplustree import BPlusTree
-from superdb.catalog import Catalog, TableHandle
-from superdb.catalog import scan as _scan
+from superdb.catalog.catalog import Catalog, TableHandle
+from superdb.catalog.catalog import scan as _scan
+from superdb.catalog.schema import Column, ColumnType, TableMeta
 from superdb.constants import DEFAULT_PAGE_SIZE
 from superdb.errors import StorageError
-from superdb.heap_file import HeapFile
-from superdb.node_layout import KEY_TYPE_INT, KEY_TYPE_TEXT
-from superdb.rid import RID
-from superdb.row import Row
-from superdb.schema import Column, ColumnType, TableMeta
-from superdb.tuple_codec import decode_tuple, encode_tuple
+from superdb.index.bplustree import BPlusTree
+from superdb.index.node_layout import KEY_TYPE_INT, KEY_TYPE_TEXT
+from superdb.storage.heap_file import HeapFile
+from superdb.storage.rid import RID
+from superdb.storage.row import Row
+from superdb.storage.tuple_codec import decode_tuple, encode_tuple
 
 
 class StorageEngine:

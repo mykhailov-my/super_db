@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from superdb.catalog import create_table, insert, open_table, scan
-from superdb.database import init_db
+from superdb.catalog.catalog import create_table, insert, open_table, scan
+from superdb.catalog.database import init_db
 from superdb.errors import StorageError
-from superdb.page import Page
+from superdb.storage.page import Page
 
 
 def _as_set(rows):

@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from superdb.database import init_db
-from superdb.engine import StorageEngine
+from superdb.catalog.database import init_db
 from superdb.errors import RecordNotFoundError, StorageError
-from superdb.rid import RID
+from superdb.storage.engine import StorageEngine
+from superdb.storage.rid import RID
 
 
 def test_engine_insert_get_roundtrip(db_dir: Path) -> None:

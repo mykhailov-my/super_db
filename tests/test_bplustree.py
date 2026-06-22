@@ -8,9 +8,9 @@ import random
 
 import pytest
 
-from superdb.bplustree import BPlusTree
 from superdb.errors import DuplicateKeyError, IndexKeyNotFoundError, IndexKeyTooLongError
-from superdb.node_layout import (
+from superdb.index.bplustree import BPlusTree
+from superdb.index.node_layout import (
     KEY_TYPE_INT,
     KEY_TYPE_TEXT,
     NULL_PAGE_ID,
@@ -20,7 +20,7 @@ from superdb.node_layout import (
     encode_leaf,
     int_leaf_max,
 )
-from superdb.rid import RID
+from superdb.storage.rid import RID
 
 # Small page size — forces splits with ~20-entry INT fanout (verified: int_leaf_max(256) = 20)
 SMALL_PAGE = 256

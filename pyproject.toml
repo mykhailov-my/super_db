@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [project.scripts]
-db-cli = "superdb.cli:main"
+db-cli = "superdb.cli.cli:main"
 
 [tool.poetry]
 package-mode = true

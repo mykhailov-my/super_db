@@ -1,7 +1,7 @@
 import sys
 from collections.abc import Sequence
 
-from superdb.schema import TableMeta
+from superdb.catalog.schema import TableMeta
 
 SLOT_ENTRY_SIZE = 6  # mirrors page_layout.SLOT_ENTRY_SIZE; no import to keep this stdlib-only
 

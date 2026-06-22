@@ -10,8 +10,8 @@ import struct
 from collections.abc import Iterator
 from dataclasses import dataclass
 
+from superdb.catalog.schema import Column, ColumnType
 from superdb.errors import StorageError
-from superdb.schema import Column, ColumnType
 
 I32 = struct.Struct("<i")   # 4-byte int32 LE
 U16 = struct.Struct("<H")   # 2-byte uint16 LE (TEXT length prefix)

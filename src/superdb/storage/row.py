@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from superdb.rid import RID
+from superdb.storage.rid import RID
 
 
 @dataclass(slots=True, frozen=True)

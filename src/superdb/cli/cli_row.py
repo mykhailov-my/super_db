@@ -1,13 +1,13 @@
 import argparse
 import math
 
-from superdb.catalog import open_table
-from superdb.cli_common import resolve_db_dir as _resolve_db
-from superdb.engine import StorageEngine
-from superdb.heap_file import HeapFile
-from superdb.rid import RID
-from superdb.schema import ColumnType, TableMeta
-from superdb.tuple_codec import describe_tuple
+from superdb.catalog.catalog import open_table
+from superdb.catalog.schema import ColumnType, TableMeta
+from superdb.cli.cli_common import resolve_db_dir as _resolve_db
+from superdb.storage.engine import StorageEngine
+from superdb.storage.heap_file import HeapFile
+from superdb.storage.rid import RID
+from superdb.storage.tuple_codec import describe_tuple
 
 
 def add_row_parser(verbs) -> None:

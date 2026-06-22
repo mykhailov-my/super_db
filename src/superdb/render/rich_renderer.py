@@ -7,8 +7,8 @@ from rich.table import Table
 from rich.text import Text
 from rich.tree import Tree
 
-from superdb.page_layout import SLOT_ENTRY_SIZE
-from superdb.schema import TableMeta
+from superdb.catalog.schema import TableMeta
+from superdb.storage.page_layout import SLOT_ENTRY_SIZE
 
 FIELD_COLORS = [
     "green",

@@ -1,11 +1,10 @@
 import argparse
 import os
 
-from superdb.catalog import open_table
-from superdb.cli_common import resolve_db_dir as _resolve_db
-from superdb.engine import StorageEngine
+from superdb.catalog.catalog import open_table
+from superdb.cli.cli_common import resolve_db_dir as _resolve_db
 from superdb.errors import StorageError
-from superdb.node_layout import (
+from superdb.index.node_layout import (
     INT_IKEY,
     KEY_TYPE_INT,
     NULL_PAGE_ID,
@@ -15,6 +14,7 @@ from superdb.node_layout import (
     decode_header,
     decode_node,
 )
+from superdb.storage.engine import StorageEngine
 
 
 def add_index_parser(verbs) -> None:
