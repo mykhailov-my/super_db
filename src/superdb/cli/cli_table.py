@@ -1,18 +1,17 @@
-import argparse
-
 from superdb.catalog.catalog import (
     create_table,
     describe_table,
     drop_table,
     list_tables,
 )
+from superdb.cli.cli_common import add_db_arg
 from superdb.cli.cli_common import resolve_db_dir as _resolve_db
 from superdb.constants import DEFAULT_PAGE_SIZE
 
 
 def add_table_parser(verbs) -> None:
     create = verbs.add_parser("create", help="create a new table")
-    create.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
+    add_db_arg(create)
     create.add_argument("--table", metavar="NAME", required=True, help="table name")
     create.add_argument(
         "--columns", metavar="SPEC", required=True, help="column spec: name:TYPE,..."
@@ -20,14 +19,14 @@ def add_table_parser(verbs) -> None:
     create.add_argument("--page-size", metavar="N", type=int, default=DEFAULT_PAGE_SIZE)
 
     ls = verbs.add_parser("list", help="list all tables")
-    ls.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
+    add_db_arg(ls)
 
     desc = verbs.add_parser("describe", help="describe a table's schema")
-    desc.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
+    add_db_arg(desc)
     desc.add_argument("--table", metavar="NAME", required=True, help="table name")
 
     drop = verbs.add_parser("drop", help="drop a table")
-    drop.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
+    add_db_arg(drop)
     drop.add_argument("--table", metavar="NAME", required=True, help="table name")
 
 

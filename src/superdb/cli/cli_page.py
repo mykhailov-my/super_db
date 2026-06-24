@@ -1,7 +1,7 @@
-import argparse
 import os
 
 from superdb.catalog.catalog import open_table
+from superdb.cli.cli_common import add_db_arg
 from superdb.cli.cli_common import resolve_db_dir as _resolve_db
 from superdb.storage.page import Page
 from superdb.storage.page_layout import HEADER_SIZE, SLOT_FLAG_LIVE
@@ -9,7 +9,7 @@ from superdb.storage.page_layout import HEADER_SIZE, SLOT_FLAG_LIVE
 
 def add_page_parser(verbs) -> None:
     show = verbs.add_parser("show", help="show slotted-page byte-layout map")
-    show.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
+    add_db_arg(show)
     show.add_argument("--table", metavar="NAME", required=True)
     show.add_argument("--page", metavar="N", type=int, required=True)
 

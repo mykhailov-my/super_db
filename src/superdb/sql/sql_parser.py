@@ -7,6 +7,7 @@ from superdb.sql.sql_ast import (
     ColumnRef,
     Comparison,
     CreateTable,
+    Expr,
     FuncCall,
     Insert,
     Join,
@@ -186,7 +187,7 @@ class _Parser:
             items.append(self.select_item())
         return tuple(items)
 
-    def select_item(self):
+    def select_item(self) -> Expr:
         # A function call (COUNT(*), SUM(x), LENGTH(x)) or a column reference.
         if self.at("IDENT") and self.tokens[self.i].value.upper() in FUNCTIONS \
                 and self.tokens[self.i + 1].value == "(":
@@ -232,10 +233,10 @@ class _Parser:
 
     # --- expressions (precedence: OR < AND < comparison < primary) ---
 
-    def expression(self) -> object:
+    def expression(self) -> Expr:
         return self.or_expr()
 
-    def or_expr(self) -> object:
+    def or_expr(self) -> Expr:
         left = self.and_expr()
         while self.at("KEYWORD", "OR"):
             self.advance()
@@ -243,7 +244,7 @@ class _Parser:
             left = BoolOp("OR", left, self.and_expr())
         return left
 
-    def and_expr(self) -> object:
+    def and_expr(self) -> Expr:
         left = self.comparison()
         while self.at("KEYWORD", "AND"):
             self.advance()
@@ -256,14 +257,14 @@ class _Parser:
         if self.terms > MAX_EXPR_TERMS:
             self.fail("expression too long")
 
-    def comparison(self) -> object:
+    def comparison(self) -> Expr:
         left = self.primary()
         if self.cur.kind == "OP" and self.cur.value in COMPARISONS:
             op = self.advance().value
             return Comparison(op, left, self.primary())
         return left
 
-    def primary(self) -> object:
+    def primary(self) -> Expr:
         if self.at("PUNCT", "("):
             if self.depth >= MAX_EXPR_DEPTH:
                 self.fail("expression nested too deeply")

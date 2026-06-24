@@ -6,7 +6,7 @@ from pathlib import Path
 from superdb.catalog.catalog import describe_table
 from superdb.catalog.schema import ColumnType, TableMeta
 from superdb.errors import LogicalError
-from superdb.sql.sql_ast import BoolOp, ColumnRef, Comparison, FuncCall, Statement
+from superdb.sql.sql_ast import BoolOp, ColumnRef, Comparison, Expr, FuncCall, Statement
 from superdb.sql.sql_ast import CreateTable as CreateTableAST
 from superdb.sql.sql_ast import Insert as InsertAST
 from superdb.sql.sql_ast import Select as SelectAST
@@ -40,13 +40,13 @@ class Scan:
 
 @dataclass(slots=True, frozen=True)
 class Filter:
-    predicate: object  # the WHERE Expr from sql_ast, columns checked to exist
+    predicate: Expr  # the WHERE Expr from sql_ast, columns checked to exist
     child: object
 
 
 @dataclass(slots=True, frozen=True)
 class Projection:
-    columns: tuple[str, ...]  # resolved column list (SELECT * expanded)
+    columns: tuple[tuple[str, object], ...]  # (output_label, Expr) pairs
     child: object
 
 
@@ -83,11 +83,6 @@ class Aggregate:
     aggregates: tuple[tuple[str, str | None, str], ...]
     output: tuple[str, ...]
     child: object
-
-
-# Projection columns may now be expressions (scalar funcs) rather than bare
-# names, so Projection.columns becomes a tuple of (output_label, Expr) pairs for
-# SELECT lists that contain functions; plain column projections still use names.
 
 
 LogicalNode = (
@@ -171,7 +166,9 @@ def _select(stmt: SelectAST, db_dir: Path) -> LogicalNode:
     return node
 
 
-def _order_and_limit(stmt: SelectAST, node: LogicalNode, available: tuple) -> LogicalNode:
+def _order_and_limit(
+    stmt: SelectAST, node: LogicalNode, available: tuple[str, ...]
+) -> LogicalNode:
     """Wrap a grouped result in Sort/Limit. ORDER BY may only reference a column
     present in the aggregate output (the group column or an aggregate label)."""
     if stmt.order_by is not None:
@@ -221,7 +218,7 @@ class _Scope:
     tables: tuple[str, ...]           # one or two table names
     by_table: dict[str, tuple[str, ...]]  # table -> its column names
 
-    def resolve(self, ref) -> str:
+    def resolve(self, ref: ColumnRef) -> str:
         """Map a ColumnRef to its canonical key in a row: bare column for a
         single table, "table.col" under a JOIN. Raises on unknown/ambiguous."""
         if ref.table is not None:
@@ -303,19 +300,17 @@ def _projection_items(stmt: SelectAST, scope: _Scope) -> tuple[tuple[str, object
     return tuple(items)
 
 
-def _check_func(fn, scope: _Scope) -> None:
+def _check_func(fn: FuncCall, scope: _Scope) -> None:
     if fn.name in _AGG_FUNCS:
         if fn.name == "COUNT" and fn.arg is None:
             return  # COUNT(*)
-        if fn.arg is None:
-            raise LogicalError(f"{fn.name} requires a column argument")
-        scope.resolve(fn.arg)
     elif fn.name in _SCALAR_FUNCS:
-        if fn.arg is None:
-            raise LogicalError(f"{fn.name} requires a column argument")
-        scope.resolve(fn.arg)
+        pass  # fall through to the shared arg check
     else:
         raise LogicalError(f"unknown function {fn.name}")
+    if fn.arg is None:
+        raise LogicalError(f"{fn.name} requires a column argument")
+    scope.resolve(fn.arg)
 
 
 def _func_label(fn) -> str:

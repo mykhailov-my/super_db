@@ -1,5 +1,4 @@
-import argparse
-
+from superdb.cli.cli_common import add_db_arg
 from superdb.cli.cli_common import resolve_db_dir as _resolve_db
 from superdb.sql import executor as ex
 from superdb.sql import logical_plan as lp
@@ -22,15 +21,15 @@ def add_sql_parser(verbs) -> None:
     p.add_argument("--query", metavar="SQL", required=True)
 
     pl = verbs.add_parser("plan", help="build and print a logical plan")
-    pl.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
+    add_db_arg(pl)
     pl.add_argument("--query", metavar="SQL", required=True)
 
     q = verbs.add_parser("query", help="run a SQL query and print the result")
-    q.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
+    add_db_arg(q)
     q.add_argument("--query", metavar="SQL", required=True)
 
     ex_p = verbs.add_parser("explain", help="print the logical and physical plans")
-    ex_p.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
+    add_db_arg(ex_p)
     ex_p.add_argument("--query", metavar="SQL", required=True)
 
 
@@ -42,8 +41,9 @@ def run_sql(args, renderer) -> None:
         plan = lp.build_plan(parse(args.query), _resolve_db(args))
         renderer.render_message(_render_plan(plan))
     elif verb == "query":
-        plan = lp.build_plan(parse(args.query), _resolve_db(args))
-        result = ex.execute(ex.lower(plan), StorageEngine(_resolve_db(args)))
+        db_dir = _resolve_db(args)
+        plan = lp.build_plan(parse(args.query), db_dir)
+        result = ex.execute(ex.lower(plan), StorageEngine(db_dir))
         renderer.render_result(result.columns, result.rows)
     elif verb == "explain":
         plan = lp.build_plan(parse(args.query), _resolve_db(args))

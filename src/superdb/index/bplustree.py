@@ -19,6 +19,7 @@ Phase 8 should add index maintenance to StorageEngine.update/delete.
 """
 from __future__ import annotations
 
+import contextlib
 import os
 from pathlib import Path
 
@@ -122,6 +123,17 @@ class BPlusTree:
     # Internal: header + node I/O helpers (all accept open fd)
     # ------------------------------------------------------------------
 
+    @contextlib.contextmanager
+    def _open(self, flags: int):
+        try:
+            fd = os.open(str(self._path), flags)
+        except FileNotFoundError as e:
+            raise StorageError(f"index file not found: {self._path}") from e
+        try:
+            yield fd
+        finally:
+            os.close(fd)
+
     def _read_header(self, fd: int) -> Header:
         """Read and validate the header page. Returns Header."""
         raw = os.pread(fd, self._page_size, 0)
@@ -163,6 +175,13 @@ class BPlusTree:
             return compare_int_keys(a, b)
         return compare_text_keys(a, b)
 
+    def _child_index(self, encoded_key: bytes, node: InternalNode, key_type: int) -> int:
+        """Return the index of the child to descend into for encoded_key."""
+        for i, k in enumerate(node.keys):
+            if self._compare(encoded_key, k, key_type) < 0:
+                return i
+        return len(node.keys)
+
     def _leaf_max(self, key_type: int, cap: int) -> int:
         """Max entries in a leaf node."""
         if key_type == KEY_TYPE_INT:
@@ -185,18 +204,12 @@ class BPlusTree:
         Descends from the root (read from header) to the appropriate leaf.
         Raises StorageError if the index file does not exist.
         """
-        try:
-            fd = os.open(str(self._path), os.O_RDONLY)
-        except FileNotFoundError as exc:
-            raise StorageError(f"index file not found: {self._path}") from exc
-        try:
+        with self._open(os.O_RDONLY) as fd:
             hdr = self._read_header(fd)
             encoded = self._encode_key(key, hdr.key_type, hdr.text_key_cap)
             return self._search_recursive(
                 fd, encoded, hdr.root_page_id, hdr.key_type, hdr.text_key_cap
             )
-        finally:
-            os.close(fd)
 
     def _search_recursive(
         self,
@@ -218,11 +231,7 @@ class BPlusTree:
                     return rid
             raise IndexKeyNotFoundError("key not found in index")
         # Internal node: find child via key comparison
-        child_idx = len(node.keys)  # default: rightmost child
-        for i, k in enumerate(node.keys):
-            if self._compare(encoded_key, k, key_type) < 0:
-                child_idx = i
-                break
+        child_idx = self._child_index(encoded_key, node, key_type)
         return self._search_recursive(fd, encoded_key, node.children[child_idx], key_type, cap)
 
     def insert(self, key: int | str, rid: RID) -> None:
@@ -237,11 +246,7 @@ class BPlusTree:
         """
         if key is None:
             raise StorageError("index key may not be NULL")
-        try:
-            fd = os.open(str(self._path), os.O_RDWR)
-        except FileNotFoundError as exc:
-            raise StorageError(f"index file not found: {self._path}") from exc
-        try:
+        with self._open(os.O_RDWR) as fd:
             hdr = self._read_header(fd)
             key_type = hdr.key_type
             cap = hdr.text_key_cap
@@ -258,8 +263,6 @@ class BPlusTree:
                     key_type, cap, new_root_id, hdr.col_name, self._page_size
                 )
                 write_page(fd, 0, new_hdr_bytes, self._page_size)
-        finally:
-            os.close(fd)
 
     def _insert_recursive(
         self,
@@ -278,11 +281,7 @@ class BPlusTree:
         if isinstance(node, LeafNode):
             return self._leaf_insert(fd, node, encoded_key, rid, page_id, key_type, cap)
         # Internal node: find child and recurse
-        child_idx = len(node.keys)  # default: rightmost child
-        for i, k in enumerate(node.keys):
-            if self._compare(encoded_key, k, key_type) < 0:
-                child_idx = i
-                break
+        child_idx = self._child_index(encoded_key, node, key_type)
         result = self._insert_recursive(
             fd, encoded_key, rid, node.children[child_idx], key_type, cap
         )
@@ -404,13 +403,7 @@ class BPlusTree:
 
         Used by tests to verify that splits occurred.
         """
-        try:
-            fd = os.open(str(self._path), os.O_RDONLY)
-        except FileNotFoundError as exc:
-            raise StorageError(f"index file not found: {self._path}") from exc
-        try:
+        with self._open(os.O_RDONLY) as fd:
             hdr = self._read_header(fd)
             root = self._read_node(fd, hdr.root_page_id, hdr.key_type, hdr.text_key_cap)
             return isinstance(root, InternalNode)
-        finally:
-            os.close(fd)

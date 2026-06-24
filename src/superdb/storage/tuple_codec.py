@@ -5,7 +5,6 @@ Layout: [bitmap][fields in schema column order]
   INT  -> 4 bytes int32 LE.
   TEXT -> u16 LE length prefix + UTF-8 bytes inline.
 """
-import math
 import struct
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -30,7 +29,7 @@ class FieldSpan:
 
 
 def _bitmap_width(n_cols: int) -> int:
-    return math.ceil(n_cols / 8)
+    return (n_cols + 7) // 8
 
 
 def encode_tuple(columns: list[Column], values: list) -> bytes:

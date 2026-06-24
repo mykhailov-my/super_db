@@ -2,8 +2,7 @@ import sys
 from collections.abc import Sequence
 
 from superdb.catalog.schema import TableMeta
-
-SLOT_ENTRY_SIZE = 6  # mirrors page_layout.SLOT_ENTRY_SIZE; no import to keep this stdlib-only
+from superdb.storage.page_layout import SLOT_ENTRY_SIZE
 
 
 class PlainRenderer:
@@ -65,7 +64,7 @@ class PlainRenderer:
             print(
                 f"Slot {slot_id} ({status})\t"
                 f"[{slot_start}, {slot_start + SLOT_ENTRY_SIZE})\t"
-                f"6B\t"
+                f"{SLOT_ENTRY_SIZE}B\t"
                 f"{notes}"
             )
         print(

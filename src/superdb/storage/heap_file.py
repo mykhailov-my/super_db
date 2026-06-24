@@ -5,6 +5,7 @@ Design decisions in effect:
   Full padded page written + fsynced per mutation (via write_page).
   Open-per-op — each method opens, operates, closes its own fd. No fd held in state.
 """
+import contextlib
 import os
 from pathlib import Path
 
@@ -28,6 +29,17 @@ class HeapFile:
         self._path = heap_path
         self._page_size = page_size
 
+    @contextlib.contextmanager
+    def _open(self, flags: int):
+        try:
+            fd = os.open(str(self._path), flags)
+        except FileNotFoundError as e:
+            raise StorageError(f"heap file not found: {self._path}") from e
+        try:
+            yield fd
+        finally:
+            os.close(fd)
+
     def _page_count(self, fd: int) -> int:
         """Number of whole pages in the heap, rejecting a torn (partial) trailing page."""
         page_size = self._page_size
@@ -48,11 +60,7 @@ class HeapFile:
         if not Page.new(page_size).can_fit(len(record)):
             raise PageFullError(f"record {len(record)}B cannot fit in any {page_size}B page")
 
-        try:
-            fd = os.open(str(self._path), os.O_RDWR)
-        except FileNotFoundError as e:
-            raise StorageError(f"heap file not found: {self._path}") from e
-        try:
+        with self._open(os.O_RDWR) as fd:
             page_count = self._page_count(fd)
             if page_count == 0:
                 page_id = 0
@@ -67,8 +75,6 @@ class HeapFile:
             slot_id = page.insert_tuple(record)
             write_page(fd, page_id, page.to_bytes(), page_size)
             return RID(page_id, slot_id)
-        finally:
-            os.close(fd)
 
     def _read_live_page(self, fd: int, rid: RID) -> Page:
         """Read the page holding rid, asserting rid points at a live record.
@@ -99,28 +105,16 @@ class HeapFile:
         Raises RecordNotFoundError for out-of-range page_id, out-of-range slot_id,
         and tombstoned slots.
         """
-        try:
-            fd = os.open(str(self._path), os.O_RDONLY)
-        except FileNotFoundError as e:
-            raise StorageError(f"heap file not found: {self._path}") from e
-        try:
+        with self._open(os.O_RDONLY) as fd:
             return self._read_live_page(fd, rid).get_tuple(rid.slot_id)
-        finally:
-            os.close(fd)
 
     def delete(self, rid: RID) -> None:
         """Tombstone the slot at rid durably. Raises RecordNotFoundError if not live."""
         page_size = self._page_size
-        try:
-            fd = os.open(str(self._path), os.O_RDWR)
-        except FileNotFoundError as e:
-            raise StorageError(f"heap file not found: {self._path}") from e
-        try:
+        with self._open(os.O_RDWR) as fd:
             page = self._read_live_page(fd, rid)
             page.tombstone_slot(rid.slot_id)
             write_page(fd, rid.page_id, page.to_bytes(), page_size)
-        finally:
-            os.close(fd)
 
     def update(self, rid: RID, record_bytes: bytes) -> RID:
         """Update the record at rid in place or relocate if the length changes.
@@ -133,11 +127,7 @@ class HeapFile:
         Raises RecordNotFoundError if rid does not address a live record.
         """
         page_size = self._page_size
-        try:
-            fd = os.open(str(self._path), os.O_RDWR)
-        except FileNotFoundError as e:
-            raise StorageError(f"heap file not found: {self._path}") from e
-        try:
+        with self._open(os.O_RDWR) as fd:
             page = self._read_live_page(fd, rid)
             old_len = len(page.get_tuple(rid.slot_id))
             if len(record_bytes) == old_len:
@@ -157,5 +147,3 @@ class HeapFile:
                 page2.tombstone_slot(rid.slot_id)
                 write_page(fd, rid.page_id, page2.to_bytes(), page_size)
                 return new_rid
-        finally:
-            os.close(fd)

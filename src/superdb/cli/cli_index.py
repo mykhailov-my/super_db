@@ -1,7 +1,7 @@
-import argparse
 import os
 
 from superdb.catalog.catalog import open_table
+from superdb.cli.cli_common import add_db_arg
 from superdb.cli.cli_common import resolve_db_dir as _resolve_db
 from superdb.errors import StorageError
 from superdb.index.node_layout import (
@@ -19,12 +19,12 @@ from superdb.storage.engine import StorageEngine
 
 def add_index_parser(verbs) -> None:
     build = verbs.add_parser("build", help="build a B+Tree index over a key column")
-    build.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
+    add_db_arg(build)
     build.add_argument("--table", metavar="NAME", required=True)
     build.add_argument("--keycol", metavar="COLUMN", required=True)
 
     show = verbs.add_parser("show", help="visualize B+Tree index as a tree")
-    show.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
+    add_db_arg(show)
     show.add_argument("--table", metavar="NAME", required=True)
 
 

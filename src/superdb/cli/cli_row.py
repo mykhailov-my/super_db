@@ -1,8 +1,8 @@
-import argparse
 import math
 
 from superdb.catalog.catalog import open_table
 from superdb.catalog.schema import ColumnType, TableMeta
+from superdb.cli.cli_common import add_db_arg
 from superdb.cli.cli_common import resolve_db_dir as _resolve_db
 from superdb.storage.engine import StorageEngine
 from superdb.storage.heap_file import HeapFile
@@ -12,32 +12,32 @@ from superdb.storage.tuple_codec import describe_tuple
 
 def add_row_parser(verbs) -> None:
     insert = verbs.add_parser("insert", help="insert a record")
-    insert.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
+    add_db_arg(insert)
     insert.add_argument("--table", metavar="NAME", required=True)
     insert.add_argument("--values", metavar="CSV", required=True)
 
     get = verbs.add_parser("get", help="get a record by RID")
-    get.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
+    add_db_arg(get)
     get.add_argument("--table", metavar="NAME", required=True)
     get.add_argument("--rid", metavar="PAGE:SLOT", required=True)
 
     scan = verbs.add_parser("scan", help="scan all live records")
-    scan.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
+    add_db_arg(scan)
     scan.add_argument("--table", metavar="NAME", required=True)
 
     update = verbs.add_parser("update", help="update a record by RID")
-    update.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
+    add_db_arg(update)
     update.add_argument("--table", metavar="NAME", required=True)
     update.add_argument("--rid", metavar="PAGE:SLOT", required=True)
     update.add_argument("--values", metavar="CSV", required=True)
 
     delete = verbs.add_parser("delete", help="delete a record by RID")
-    delete.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
+    add_db_arg(delete)
     delete.add_argument("--table", metavar="NAME", required=True)
     delete.add_argument("--rid", metavar="PAGE:SLOT", required=True)
 
     hexdump = verbs.add_parser("hexdump", help="hex dump a record's raw bytes")
-    hexdump.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS)
+    add_db_arg(hexdump)
     hexdump.add_argument("--table", metavar="NAME", required=True)
     hexdump.add_argument("--rid", metavar="PAGE:SLOT", required=True)
 
@@ -62,7 +62,7 @@ def _parse_values_spec(spec: str, meta: TableMeta) -> list:
     result = []
     for col, raw in zip(meta.columns, fields, strict=True):
         raw = raw.strip()
-        if raw == "" or raw == r"\N":
+        if raw in {"", r"\N"}:
             result.append(None)
         elif col.col_type == ColumnType.INT:
             try:

@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 from superdb.errors import LogicalError
-from superdb.sql.sql_ast import BoolOp, ColumnRef, Comparison, FuncCall, Literal
+from superdb.sql.sql_ast import BoolOp, ColumnRef, Comparison, Expr, FuncCall, Literal
 
 # Evaluate a WHERE expression (sql_ast.Expr) against one row. A row is a plain
 # dict[column -> value]; the key is the column name, and a later milestone may
 # use qualified keys like "users.id" — this evaluator looks the key up verbatim,
 # so it already tolerates that without change.
 #
-# NULL follows SQL three-valued logic: a comparison involving NULL is unknown
-# (treated as not-true), AND/OR propagate via Python truthiness of the bool
-# result. We collapse unknown to False at the predicate boundary, which is
-# correct for WHERE (rows where the predicate is not TRUE are filtered out).
+# NULL follows SQL three-valued logic for comparisons: a comparison involving
+# NULL returns None (unknown), not True/False. For AND/OR we simplify — unknown
+# is coerced to False before the boolean operator, so `NULL OR False` yields
+# False rather than SQL UNKNOWN. Acceptable for WHERE (only TRUE rows pass).
 
 _COMPARATORS = {
     "=": lambda a, b: a == b,
@@ -23,7 +23,7 @@ _COMPARATORS = {
 }
 
 
-def evaluate(expr, row: dict) -> object:
+def evaluate(expr: Expr, row: dict[str, object]) -> object:
     """Return the value of an expression for a row. For a top-level WHERE
     predicate the result is a bool; sub-expressions may return scalar values."""
     if isinstance(expr, Literal):
@@ -45,7 +45,7 @@ def evaluate(expr, row: dict) -> object:
     raise LogicalError(f"cannot evaluate expression of type {type(expr).__name__}")
 
 
-def matches(predicate, row: dict) -> bool:
+def matches(predicate: Expr, row: dict[str, object]) -> bool:
     """True iff the WHERE predicate evaluates to exactly TRUE for this row.
     SQL unknown (from a NULL comparison) is not TRUE, so the row is excluded."""
     return evaluate(predicate, row) is True

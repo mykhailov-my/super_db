@@ -83,19 +83,17 @@ class Page:
         base = HEADER_SIZE + slot_id * SLOT_ENTRY_SIZE
         return SLOT.unpack(self._buf[base:base + SLOT_ENTRY_SIZE])
 
-    _slot = slot
-
     def get_tuple(self, slot_id: int) -> bytes:
-        off, ln, _fl = self._slot(slot_id)
+        off, ln, _fl = self.slot(slot_id)
         if off < HEADER_SIZE or off + ln > self.page_size:
             raise StorageError(f"slot {slot_id} offset/length out of bounds")
         return bytes(self._buf[off:off + ln])
 
     def is_live(self, slot_id: int) -> bool:
-        return bool(self._slot(slot_id)[2] & SLOT_FLAG_LIVE)
+        return bool(self.slot(slot_id)[2] & SLOT_FLAG_LIVE)
 
     def tombstone_slot(self, slot_id: int) -> None:
-        off, ln, fl = self._slot(slot_id)
+        off, ln, fl = self.slot(slot_id)
         base = HEADER_SIZE + slot_id * SLOT_ENTRY_SIZE
         mv = memoryview(self._buf)
         mv[base:base + SLOT_ENTRY_SIZE] = SLOT.pack(off, ln, fl & ~SLOT_FLAG_LIVE)
@@ -106,7 +104,7 @@ class Page:
         Caller must ensure the slot is live (HeapFile gates on is_live); this only
         touches tuple bytes, never the slot's live flag.
         """
-        off, ln, _fl = self._slot(slot_id)
+        off, ln, _fl = self.slot(slot_id)
         if len(record) != ln:
             raise StorageError(
                 f"overwrite_tuple: record length {len(record)} != slot length {ln}"
@@ -119,11 +117,7 @@ class Page:
     def live_slots(self) -> list[int]:
         result = []
         for sid in range(self.slot_count):
-            base = HEADER_SIZE + sid * SLOT_ENTRY_SIZE
-            off, ln, fl = SLOT.unpack(self._buf[base:base + SLOT_ENTRY_SIZE])
-            if not (fl & SLOT_FLAG_LIVE):
-                continue
-            if off < HEADER_SIZE or off + ln > self.page_size:
-                continue
-            result.append(sid)
+            off, ln, fl = self.slot(sid)
+            if (fl & SLOT_FLAG_LIVE) and off >= HEADER_SIZE and off + ln <= self.page_size:
+                result.append(sid)
         return result

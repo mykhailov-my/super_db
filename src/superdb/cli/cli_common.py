@@ -1,4 +1,10 @@
+import argparse
 from pathlib import Path
+
+
+def add_db_arg(parser: argparse.ArgumentParser, help: str | None = None) -> None:
+    """Add the shared --db PATH argument to a subparser."""
+    parser.add_argument("--db", metavar="PATH", default=argparse.SUPPRESS, help=help)
 
 
 def resolve_db_dir(args) -> Path:
