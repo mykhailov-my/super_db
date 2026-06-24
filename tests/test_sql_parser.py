@@ -1,7 +1,7 @@
 import pytest
 
 from superdb.errors import ParseError
-from superdb.sql.sql_ast import (
+from superdb.sql.ast import (
     BoolOp,
     ColumnDef,
     ColumnRef,
@@ -12,7 +12,7 @@ from superdb.sql.sql_ast import (
     OrderBy,
     Select,
 )
-from superdb.sql.sql_parser import parse
+from superdb.sql.parser import parse
 
 # --- CREATE TABLE ---
 

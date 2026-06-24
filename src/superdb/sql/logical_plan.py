@@ -6,10 +6,10 @@ from pathlib import Path
 from superdb.catalog.catalog import describe_table
 from superdb.catalog.schema import ColumnType, TableMeta
 from superdb.errors import LogicalError
-from superdb.sql.sql_ast import BoolOp, ColumnRef, Comparison, Expr, FuncCall, Statement
-from superdb.sql.sql_ast import CreateTable as CreateTableAST
-from superdb.sql.sql_ast import Insert as InsertAST
-from superdb.sql.sql_ast import Select as SelectAST
+from superdb.sql.ast import BoolOp, ColumnRef, Comparison, Expr, FuncCall, Statement
+from superdb.sql.ast import CreateTable as CreateTableAST
+from superdb.sql.ast import Insert as InsertAST
+from superdb.sql.ast import Select as SelectAST
 
 # AST → Logical Plan (HW Stage 4). Builds a tree of logical operators (not an
 # AST copy) and binds it against the Catalog: table/column existence, INSERT
@@ -40,7 +40,7 @@ class Scan:
 
 @dataclass(slots=True, frozen=True)
 class Filter:
-    predicate: Expr  # the WHERE Expr from sql_ast, columns checked to exist
+    predicate: Expr  # the WHERE Expr from sql.ast, columns checked to exist
     child: object
 
 

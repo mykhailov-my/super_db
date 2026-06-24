@@ -6,7 +6,7 @@ from superdb.catalog.catalog import create_table
 from superdb.catalog.database import init_db
 from superdb.errors import LogicalError
 from superdb.sql import logical_plan as lp
-from superdb.sql.sql_parser import parse
+from superdb.sql.parser import parse
 
 
 def _users(db_dir: Path) -> None:

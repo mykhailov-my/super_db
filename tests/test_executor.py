@@ -8,7 +8,7 @@ from superdb.catalog.database import init_db
 from superdb.errors import LogicalError
 from superdb.sql import executor as ex
 from superdb.sql import logical_plan as lp
-from superdb.sql.sql_parser import parse
+from superdb.sql.parser import parse
 from superdb.storage.engine import StorageEngine
 
 

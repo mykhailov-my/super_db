@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from superdb.errors import LogicalError
-from superdb.sql.sql_ast import BoolOp, ColumnRef, Comparison, Expr, FuncCall, Literal
+from superdb.sql.ast import BoolOp, ColumnRef, Comparison, Expr, FuncCall, Literal
 
-# Evaluate a WHERE expression (sql_ast.Expr) against one row. A row is a plain
+# Evaluate a WHERE expression (ast.Expr) against one row. A row is a plain
 # dict[column -> value]; the key is the column name, and a later milestone may
 # use qualified keys like "users.id" — this evaluator looks the key up verbatim,
 # so it already tolerates that without change.

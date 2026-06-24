@@ -1,10 +1,10 @@
 from pathlib import Path
 
-from superdb.render.plain_renderer import PlainRenderer
-from superdb.render.renderer import Renderer
+from superdb.render.plain import PlainRenderer
+from superdb.render.protocol import Renderer
 
 # The only module permitted to import rich — the renderer firewall seam.
-RICH_ALLOWED = {"rich_renderer.py"}
+RICH_ALLOWED = {"rich.py"}
 
 
 def test_rich_not_imported_outside_render():
@@ -29,7 +29,7 @@ def test_rich_not_imported_outside_render():
             stripped = line.strip()
             if stripped.startswith(("from rich", "import rich")):
                 leaks.append(f"{f}: {stripped}")
-    assert not leaks, "rich imported outside rich_renderer.py:\n" + "\n".join(leaks)
+    assert not leaks, "rich imported outside render/rich.py:\n" + "\n".join(leaks)
 
 
 def test_plain_renderer_satisfies_protocol():

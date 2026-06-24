@@ -4,8 +4,8 @@ from superdb.catalog.catalog import (
     drop_table,
     list_tables,
 )
-from superdb.cli.cli_common import add_db_arg
-from superdb.cli.cli_common import resolve_db_dir as _resolve_db
+from superdb.cli.common import add_db_arg
+from superdb.cli.common import resolve_db_dir as _resolve_db
 from superdb.constants import DEFAULT_PAGE_SIZE
 
 

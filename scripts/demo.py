@@ -13,11 +13,11 @@ import sys
 from pathlib import Path
 
 from superdb.catalog.catalog import open_table
-from superdb.cli.cli_index import _dump_tree
+from superdb.cli.index import _dump_tree
 from superdb.errors import RecordNotFoundError, SuperDBError
 from superdb.catalog.database import init_db
 from superdb.index.node_layout import decode_header
-from superdb.render.rich_renderer import RichRenderer
+from superdb.render.rich import RichRenderer
 from superdb.storage.engine import StorageEngine
 from superdb.storage.heap_file import HeapFile
 from superdb.storage.page import Page

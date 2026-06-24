@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from superdb.catalog.database import init_db
-from superdb.cli.cli_common import add_db_arg
+from superdb.cli.common import add_db_arg
 from superdb.errors import InitError
 
 

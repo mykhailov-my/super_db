@@ -1,8 +1,8 @@
-from superdb.cli.cli_common import add_db_arg
-from superdb.cli.cli_common import resolve_db_dir as _resolve_db
+from superdb.cli.common import add_db_arg
+from superdb.cli.common import resolve_db_dir as _resolve_db
 from superdb.sql import executor as ex
 from superdb.sql import logical_plan as lp
-from superdb.sql.sql_ast import (
+from superdb.sql.ast import (
     BoolOp,
     ColumnRef,
     Comparison,
@@ -12,7 +12,7 @@ from superdb.sql.sql_ast import (
     Literal,
     Select,
 )
-from superdb.sql.sql_parser import parse
+from superdb.sql.parser import parse
 from superdb.storage.engine import StorageEngine
 
 

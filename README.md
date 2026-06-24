@@ -155,41 +155,54 @@ services or network access required.
 ## Project Layout
 
 The package is a single flat module — every file lives directly under `src/superdb/`.
-Layer boundaries are kept legible by naming convention: `cli_*` for command handlers,
-`*_renderer`/`renderer` for the presentation layer (the only zone that may import rich),
-and everything else is the stdlib-only storage core.
+Layer boundaries are kept legible by package: each subsystem is its own subpackage,
+and `render/rich.py` is the only zone that may import rich. The cross-cutting
+primitives (`errors`, `log`, `constants`, `durability`) sit at the package root.
 
 ```
 super_db/
 ├── src/superdb/
-│   ├── database.py              # init_db: create db directory + empty catalog
-│   ├── catalog.py               # catalog read/write, table CRUD, row-level ops
-│   ├── schema.py                # TableMeta, Column, ColumnType, StorageTrack dataclasses
-│   ├── page_layout.py           # struct constants: PAGE_HDR, SLOT, HEADER_SIZE, SLOT_ENTRY_SIZE
-│   ├── page.py                  # Page: in-memory mutable bytearray + slot operations
-│   ├── heap_file.py             # HeapFile: paged file reader/writer using os.pread/pwrite
-│   ├── engine.py                # StorageEngine: higher-level table operations
-│   ├── tuple_codec.py           # encode_tuple/decode_tuple + FieldSpan describe_tuple
-│   ├── rid.py                   # RID(page_id, slot_id) frozen dataclass
-│   ├── row.py                   # Row(rid, values) result type
-│   ├── node_layout.py           # B+Tree struct constants, key codecs, node encode/decode
-│   ├── bplustree.py             # BPlusTree: insert, search, split, persistence (.idx file)
-│   ├── renderer.py              # Renderer Protocol (stdlib only, no rich import)
-│   ├── plain_renderer.py        # PlainRenderer: deterministic text output, used in tests
-│   ├── rich_renderer.py         # RichRenderer: styled terminal output (only file importing rich)
 │   ├── constants.py             # CATALOG_FILE, DEFAULT_PAGE_SIZE, FORMAT_VERSION
 │   ├── durability.py            # write_page (pwrite+fsync), write_json_atomic (temp+replace)
 │   ├── errors.py                # SuperDBError hierarchy
 │   ├── log.py                   # loguru setup
-│   ├── cli.py                   # argparse root; noun/verb dispatch
-│   ├── cli_common.py            # shared CLI helpers (resolve_db_dir)
-│   ├── cli_db.py                # db init
-│   ├── cli_table.py             # table create/list/describe/drop
-│   ├── cli_row.py               # row insert/get/scan/update/delete/hexdump
-│   ├── cli_page.py              # page show
-│   └── cli_index.py             # index show + B+Tree walker
+│   ├── storage/                 # stdlib-only slotted-page heap store
+│   │   ├── page_layout.py       # struct constants: PAGE_HDR, SLOT, HEADER_SIZE, SLOT_ENTRY_SIZE
+│   │   ├── page.py              # Page: in-memory mutable bytearray + slot operations
+│   │   ├── heap_file.py         # HeapFile: paged file reader/writer using os.pread/pwrite
+│   │   ├── engine.py            # StorageEngine: higher-level table operations
+│   │   ├── tuple_codec.py       # encode_tuple/decode_tuple + FieldSpan describe_tuple
+│   │   ├── rid.py               # RID(page_id, slot_id) frozen dataclass
+│   │   └── row.py               # Row(rid, values) result type
+│   ├── catalog/                 # persistent metadata + table/row API
+│   │   ├── database.py          # init_db: create db directory + empty catalog
+│   │   ├── catalog.py           # catalog read/write, table CRUD, row-level ops
+│   │   └── schema.py            # TableMeta, Column, ColumnType, StorageTrack dataclasses
+│   ├── index/                   # B+Tree secondary index
+│   │   ├── node_layout.py       # struct constants, key codecs, node encode/decode
+│   │   └── bplustree.py         # BPlusTree: insert, search, split, persistence (.idx file)
+│   ├── sql/                     # hand-written SQL pipeline (stdlib only)
+│   │   ├── lexer.py             # tokenizer
+│   │   ├── ast.py               # AST nodes (Select, Insert, CreateTable, Expr)
+│   │   ├── parser.py            # recursive-descent parser
+│   │   ├── logical_plan.py      # binder: AST -> logical plan against the catalog
+│   │   ├── evaluate.py          # WHERE/projection expression evaluation (3-valued NULL)
+│   │   └── executor.py          # physical plan + Volcano-style execution
+│   ├── render/                  # presentation layer (swappable behind a Protocol)
+│   │   ├── protocol.py          # Renderer Protocol (stdlib only, no rich import)
+│   │   ├── plain.py             # PlainRenderer: deterministic text output, used in tests
+│   │   └── rich.py              # RichRenderer: styled terminal output (only file importing rich)
+│   └── cli/                     # argparse noun/verb command line
+│       ├── main.py              # argparse root; noun/verb dispatch
+│       ├── common.py            # shared CLI helpers (resolve_db_dir, add_db_arg)
+│       ├── db.py                # db init
+│       ├── table.py            # table create/list/describe/drop
+│       ├── row.py              # row insert/get/scan/update/delete/hexdump
+│       ├── page.py             # page show
+│       ├── index.py            # index show + B+Tree walker
+│       └── sql.py              # sql parse/plan/query/explain
 ├── tests/                       # pytest suite (one file per module or feature)
 ├── scripts/
-│   └── demo.py                  # 9-step end-to-end showcase; run to see live visualizations
+│   └── demo.py                  # end-to-end showcase; run to see live visualizations
 └── pyproject.toml
 ```

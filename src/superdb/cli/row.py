@@ -2,8 +2,8 @@ import math
 
 from superdb.catalog.catalog import open_table
 from superdb.catalog.schema import ColumnType, TableMeta
-from superdb.cli.cli_common import add_db_arg
-from superdb.cli.cli_common import resolve_db_dir as _resolve_db
+from superdb.cli.common import add_db_arg
+from superdb.cli.common import resolve_db_dir as _resolve_db
 from superdb.storage.engine import StorageEngine
 from superdb.storage.heap_file import HeapFile
 from superdb.storage.rid import RID

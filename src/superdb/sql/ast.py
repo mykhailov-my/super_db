@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-# Internal SQL AST. Named sql_ast (not ast) to avoid shadowing the stdlib.
-# Statements: CreateTable, Insert, Select. Expressions: ColumnRef, Literal,
+# Internal SQL AST (superdb.sql.ast — a submodule, so it never shadows the stdlib
+# `ast`). Statements: CreateTable, Insert, Select. Expressions: ColumnRef, Literal,
 # Comparison, BoolOp. Literals carry a kind ("INT" | "STRING" | "NULL") so the
 # planner can type them later without re-parsing.
 

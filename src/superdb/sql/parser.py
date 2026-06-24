@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from superdb.errors import ParseError
-from superdb.sql.sql_ast import (
+from superdb.sql.ast import (
     BoolOp,
     ColumnDef,
     ColumnRef,
@@ -16,7 +16,7 @@ from superdb.sql.sql_ast import (
     Select,
     Statement,
 )
-from superdb.sql.sql_lexer import Token, tokenize
+from superdb.sql.lexer import Token, tokenize
 
 # Hand-written recursive-descent parser for the supported SQL subset (HW Stage 3).
 # Storage-isolated: imports nothing from the storage/catalog layer and makes no

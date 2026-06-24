@@ -1,8 +1,8 @@
 import os
 
 from superdb.catalog.catalog import open_table
-from superdb.cli.cli_common import add_db_arg
-from superdb.cli.cli_common import resolve_db_dir as _resolve_db
+from superdb.cli.common import add_db_arg
+from superdb.cli.common import resolve_db_dir as _resolve_db
 from superdb.errors import StorageError
 from superdb.index.node_layout import (
     INT_IKEY,
